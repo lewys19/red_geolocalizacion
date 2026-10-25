@@ -13,9 +13,16 @@ export function Encabezado() {
       <Logo />
       <nav className="flex items-center gap-2 text-sm">
         {sesion ? (
-          <Link href="/cuenta" className="rounded-full bg-marca-suave px-3 py-1.5 font-medium text-marca-fuerte">
-            {sesion.usuario.nombre.split(" ")[0]}
-          </Link>
+          <>
+            {(sesion.usuario.rol === "operador" || sesion.usuario.rol === "superadmin") && (
+              <Link href="/admin" className="px-2 py-1.5 text-texto-2 hover:text-texto">
+                Panel
+              </Link>
+            )}
+            <Link href="/cuenta" className="rounded-full bg-marca-suave px-3 py-1.5 font-medium text-marca-fuerte">
+              {sesion.usuario.nombre.split(" ")[0]}
+            </Link>
+          </>
         ) : (
           <>
             <Link href="/ingresar" className="px-2 py-1.5 text-texto-2 hover:text-texto">

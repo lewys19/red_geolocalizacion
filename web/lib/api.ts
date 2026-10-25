@@ -58,14 +58,16 @@ export async function pedir<T>(
   ruta: string,
   { metodo = "GET", cuerpo, conSesion = false, senal }: Opciones = {},
 ): Promise<T> {
+  // Un FormData (fotos) se envía tal cual: el navegador pone el Content-Type con su separador.
+  const esArchivo = cuerpo instanceof FormData;
   const enviar = (sesion: Sesion | null) =>
     fetch(`${BASE}${ruta}`, {
       method: metodo,
       headers: {
-        ...(cuerpo !== undefined ? { "Content-Type": "application/json" } : {}),
+        ...(cuerpo !== undefined && !esArchivo ? { "Content-Type": "application/json" } : {}),
         ...(conSesion && sesion ? { Authorization: `Bearer ${sesion.token_acceso}` } : {}),
       },
-      body: cuerpo !== undefined ? JSON.stringify(cuerpo) : undefined,
+      body: esArchivo ? cuerpo : cuerpo !== undefined ? JSON.stringify(cuerpo) : undefined,
       signal: senal,
     });
 

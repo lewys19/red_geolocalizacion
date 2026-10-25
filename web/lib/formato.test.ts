@@ -26,3 +26,17 @@ describe("precio y día", async () => {
     expect(hoyEnLima(new Date("2026-10-21T04:30:00Z"))).toBe(1);
   });
 });
+
+describe("precio escrito por el dueño", async () => {
+  const { aCentimos } = await import("@/components/PanelCarta");
+  it("acepta punto, coma y S/", () => {
+    expect(aCentimos("18.50")).toBe(1850);
+    expect(aCentimos("18,5")).toBe(1850);
+    expect(aCentimos("S/ 7")).toBe(700);
+  });
+  it("vacío es consultar y lo inválido se rechaza", () => {
+    expect(aCentimos("  ")).toBeNull();
+    expect(aCentimos("diez")).toBeUndefined();
+    expect(aCentimos("-3")).toBeUndefined();
+  });
+});

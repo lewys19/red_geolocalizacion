@@ -79,3 +79,11 @@ export function EditorHorario({ valor, alCambiar }: { valor: HorarioSemana; alCa
     </div>
   );
 }
+
+/** De la lista de la API a la semana del editor (un tramo por día: el primero). */
+export function deHorarios(horarios: Horario[]): HorarioSemana {
+  return SEMANA_VACIA.map((_, dia) => {
+    const t = horarios.find((h) => h.dia_semana === dia);
+    return t ? { abre: t.abre.slice(0, 5), cierra: t.cierra.slice(0, 5) } : null;
+  });
+}

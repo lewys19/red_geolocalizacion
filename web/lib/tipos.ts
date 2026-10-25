@@ -97,3 +97,20 @@ export interface Ficha {
   calificacion_promedio: number | null;
   total_resenas: number;
 }
+
+/** Lo que ve el dueño de su negocio (GET /negocios/mios/{id}). */
+export interface NegocioDetalle extends Negocio {
+  categoria_id: number;
+  descripcion: string | null;
+  referencia: string | null;
+  ubicacion: { lng: number; lat: number } | null;
+  telefono: string | null;
+  whatsapp: string | null;
+  tiene_delivery: boolean;
+  mi_rol: "propietario" | "editor" | null;
+}
+
+export interface Catalogo {
+  productos: Producto[];
+  fotos: Foto[];
+}

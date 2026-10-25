@@ -97,7 +97,8 @@ export default function Cuenta() {
               {negocios.length ? (
                 <ul className="mt-1 space-y-2">
                   {negocios.map((n) => (
-                    <li key={n.id} className="rounded-lg border border-borde p-2.5">
+                    <li key={n.id}>
+                      <Link href={`/mis-negocios/${n.id}`} className="block rounded-lg border border-borde p-2.5 hover:border-marca">
                       <div className="flex items-center justify-between gap-2">
                         <span className="truncate font-medium">{n.nombre}</span>
                         <span className={`shrink-0 rounded-full px-2 py-0.5 text-xs font-semibold ${ESTADO[n.estado].clase}`}>
@@ -108,6 +109,7 @@ export default function Cuenta() {
                         {n.categoria} · {n.distrito}
                       </p>
                       {n.motivo_rechazo && <p className="mt-1 text-xs text-error">Motivo: {n.motivo_rechazo}</p>}
+                      </Link>
                     </li>
                   ))}
                 </ul>
