@@ -51,9 +51,13 @@ interface Opciones {
   metodo?: "GET" | "POST" | "PATCH" | "DELETE";
   cuerpo?: unknown;
   conSesion?: boolean;
+  senal?: AbortSignal; // para cancelar una búsqueda que ya no sirve
 }
 
-export async function pedir<T>(ruta: string, { metodo = "GET", cuerpo, conSesion = false }: Opciones = {}): Promise<T> {
+export async function pedir<T>(
+  ruta: string,
+  { metodo = "GET", cuerpo, conSesion = false, senal }: Opciones = {},
+): Promise<T> {
   const enviar = (sesion: Sesion | null) =>
     fetch(`${BASE}${ruta}`, {
       method: metodo,
@@ -62,6 +66,7 @@ export async function pedir<T>(ruta: string, { metodo = "GET", cuerpo, conSesion
         ...(conSesion && sesion ? { Authorization: `Bearer ${sesion.token_acceso}` } : {}),
       },
       body: cuerpo !== undefined ? JSON.stringify(cuerpo) : undefined,
+      signal: senal,
     });
 
   let r = await enviar(leerSesion());

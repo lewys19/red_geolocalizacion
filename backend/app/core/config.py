@@ -26,6 +26,13 @@ class Settings(BaseSettings):
 
     ZONA_HORARIA: str = "America/Lima"
 
+    # Mapa: hasta este número de negocios en pantalla se muestran uno por uno;
+    # con más, se agrupan en burbujas con el conteo.
+    LIMITE_PUNTOS_MAPA: int = 150
+    # Recuadro máximo que se puede pedir (en grados, ~110 km por grado): evita consultas de todo el país.
+    MAX_LADO_RECUADRO: float = 1.0
+    MAX_PENDIENTES_POR_USUARIO: int = 5
+
 
 # Instancia única que importaremos en el resto del proyecto.
 settings = Settings()

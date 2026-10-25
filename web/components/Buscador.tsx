@@ -3,22 +3,15 @@
 import { useEffect, useState } from "react";
 
 import { pedir } from "@/lib/api";
-
-interface Categoria {
-  id: number;
-  nombre: string;
-  slug: string;
-  hijas: Categoria[];
-}
+import type { Categoria } from "@/lib/tipos";
 
 // Chips: las subcategorías de comida primero (lo más buscado) y luego el resto.
 function aplanar(raices: Categoria[]): Categoria[] {
   return raices.flatMap((c) => (c.hijas.length ? c.hijas : [c]));
 }
 
-export function Buscador() {
+export function Buscador({ elegida, alCambiar }: { elegida: string | null; alCambiar: (slug: string | null) => void }) {
   const [categorias, setCategorias] = useState<Categoria[]>([]);
-  const [elegida, setElegida] = useState<string | null>(null);
 
   useEffect(() => {
     pedir<Categoria[]>("/categorias")
@@ -34,10 +27,13 @@ export function Buscador() {
             <path d="M11 4a7 7 0 1 0 4.3 12.5l4.1 4.1 1.4-1.4-4.1-4.1A7 7 0 0 0 11 4zm0 2a5 5 0 1 1 0 10 5 5 0 0 1 0-10z" fill="currentColor" />
           </svg>
           <span className="sr-only">Buscar negocios</span>
+          {/* La búsqueda por texto llega en el Sprint 2; por ahora se filtra con las categorías. */}
           <input
             type="search"
+            disabled
+            title="Muy pronto: búsqueda por texto"
             placeholder="Pollo a la brasa, ferretería, botica…"
-            className="w-full bg-transparent text-base outline-none placeholder:text-texto-2"
+            className="w-full bg-transparent text-base outline-none placeholder:text-texto-2 disabled:cursor-not-allowed"
           />
         </label>
       </div>
@@ -46,7 +42,7 @@ export function Buscador() {
           <button
             key={c.id}
             type="button"
-            onClick={() => setElegida(elegida === c.slug ? null : c.slug)}
+            onClick={() => alCambiar(elegida === c.slug ? null : c.slug)}
             aria-pressed={elegida === c.slug}
             className={`shrink-0 rounded-full border px-3 py-1.5 text-sm shadow-sm transition ${
               elegida === c.slug

@@ -31,7 +31,7 @@ URL_PRUEBAS = make_url(os.environ.get("DATABASE_URL_PRUEBAS") or settings.DATABA
     database="altoque_pruebas"
 )
 # Tablas que se vacían entre pruebas (las categorías vienen de la migración y se conservan).
-TABLAS_DE_DATOS = "miembros_negocio, negocios, tokens_refresco, usuarios"
+TABLAS_DE_DATOS = "horarios, miembros_negocio, negocios, tokens_refresco, usuarios"
 
 
 def _crear_base_si_falta() -> None:
@@ -96,3 +96,20 @@ def registrar(client: TestClient) -> Callable[..., dict]:
 
 def cabeceras(sesion: dict) -> Cabeceras:
     return {"Authorization": f"Bearer {sesion['token_acceso']}"}
+
+
+def datos_negocio(**cambios: object) -> dict:
+    """Pollería en Miraflores (cerca del Parque Kennedy), abierta de lunes a domingo 12:00-23:00."""
+    datos: dict = {
+        "nombre": "Pollería El Buen Sabor",
+        "categoria_id": 2,  # Pollerías (sembrada por la migración 0001)
+        "distrito": "Miraflores",
+        "direccion": "Av. Larco 345",
+        "referencia": "Frente al parque",
+        "ubicacion": {"lng": -77.0300, "lat": -12.1215},
+        "whatsapp": "987 654 321",
+        "tiene_delivery": True,
+        "horarios": [{"dia_semana": d, "abre": "12:00", "cierra": "23:00"} for d in range(7)],
+    }
+    datos.update(cambios)
+    return datos
