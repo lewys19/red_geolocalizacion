@@ -112,6 +112,14 @@ def _rol_en(db: Session, usuario: Usuario, negocio_id: int) -> RolMiembro | None
     )
 
 
+def exigir_miembro(db: Session, usuario: Usuario, negocio_id: int) -> RolMiembro:
+    """404 si no es miembro: no se revela qué ids existen."""
+    rol = _rol_en(db, usuario, negocio_id)
+    if rol is None or db.scalar(select(Negocio.id).where(Negocio.id == negocio_id, Negocio.eliminado_en.is_(None))) is None:
+        raise ErrorNegocio(status.HTTP_404_NOT_FOUND, "Negocio no encontrado.")
+    return rol
+
+
 def ver_propio(db: Session, usuario: Usuario, negocio_id: int) -> NegocioOut:
     rol = _rol_en(db, usuario, negocio_id)
     negocio = _cargar(db, negocio_id) if rol else None

@@ -11,7 +11,8 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 COPY . .
 
-RUN useradd --system --create-home altoque
+# /app/media: fotos de los negocios (volumen persistente en docker-compose).
+RUN useradd --system --create-home altoque && mkdir -p /app/media && chown altoque /app/media
 USER altoque
 
 EXPOSE 8000

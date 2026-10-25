@@ -45,6 +45,10 @@ class Negocio(Base):
 
     categoria: Mapped["Categoria"] = relationship()  # noqa: F821
     miembros: Mapped[list["MiembroNegocio"]] = relationship(back_populates="negocio")
+    productos: Mapped[list["Producto"]] = relationship(  # noqa: F821
+        cascade="all, delete-orphan", order_by="(Producto.orden, Producto.id)"
+    )
+    fotos: Mapped[list["Foto"]] = relationship(cascade="all, delete-orphan", order_by="(Foto.orden, Foto.id)")  # noqa: F821
     horarios: Mapped[list["Horario"]] = relationship(  # noqa: F821
         back_populates="negocio", cascade="all, delete-orphan", order_by="(Horario.dia_semana, Horario.abre)"
     )

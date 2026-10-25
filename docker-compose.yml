@@ -43,6 +43,10 @@ services:
       REDIS_URL: redis://redis:6379/0
       SECRET_KEY: ${SECRET_KEY:?Falta SECRET_KEY en el archivo .env (mínimo 32 caracteres)}
       CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:3100}
+      CARPETA_MEDIA: /app/media
+      GEOCODING_CONTACTO: ${GEOCODING_CONTACTO:-}
+    volumes:
+      - altoque-media:/app/media
     ports:
       - "${PUERTO_API:-8100}:8000"
     depends_on:
@@ -61,6 +65,9 @@ services:
   web:
     build: ./web
     container_name: altoque-web
+    environment:
+      # Para las páginas que se arman en el servidor (ficha del negocio): llaman a la API por la red interna.
+      API_INTERNA: http://api:8000
     ports:
       - "${PUERTO_WEB:-3100}:3000"
     depends_on:
@@ -70,3 +77,4 @@ services:
 
 volumes:
   altoque-db:
+  altoque-media:

@@ -41,6 +41,13 @@ class Settings(BaseSettings):
     GEOCODING_CONTACTO: str = ""  # email o web de contacto que va en el User-Agent
     DIAS_CACHE_GEOCODING: int = 30
 
+    # Fotos: "local" (disco del servidor, servidas en /media) o, más adelante, "r2" (Cloudflare R2).
+    ALMACEN_FOTOS: str = "local"
+    CARPETA_MEDIA: str = "./media"
+    MAX_MB_FOTO: int = 8
+    MAX_FOTOS_POR_NEGOCIO: int = 10
+    MAX_PRODUCTOS_POR_NEGOCIO: int = 200
+
 
 # Instancia única que importaremos en el resto del proyecto.
 settings = Settings()

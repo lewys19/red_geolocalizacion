@@ -11,7 +11,11 @@ const nextConfig: NextConfig = {
   // Genera un servidor mínimo (.next/standalone) para una imagen Docker liviana.
   output: "standalone",
   async rewrites() {
-    return [{ source: "/api/v1/:ruta*", destination: `${API_INTERNA}/api/v1/:ruta*` }];
+    return [
+      { source: "/api/v1/:ruta*", destination: `${API_INTERNA}/api/v1/:ruta*` },
+      // Fotos de los negocios (almacén local de la API).
+      { source: "/media/:ruta*", destination: `${API_INTERNA}/media/:ruta*` },
+    ];
   },
   turbopack: {
     rules: {

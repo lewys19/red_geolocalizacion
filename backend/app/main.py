@@ -4,9 +4,12 @@ from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 
 import redis
+from pathlib import Path
+
 from fastapi import FastAPI, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
+from fastapi.staticfiles import StaticFiles
 from sqlalchemy import text
 
 from app import models  # noqa: F401  (importa los modelos para registrarlos)
@@ -41,6 +44,11 @@ app.add_middleware(
 )
 app.add_exception_handler(ErrorNegocio, manejar_error_negocio)  # type: ignore[arg-type]
 app.include_router(api_router, prefix="/api/v1")
+
+# Fotos guardadas en el disco del servidor (estrategia "local" del almacén).
+if settings.ALMACEN_FOTOS == "local":
+    Path(settings.CARPETA_MEDIA).mkdir(parents=True, exist_ok=True)
+    app.mount("/media", StaticFiles(directory=settings.CARPETA_MEDIA), name="media")
 
 
 @app.get("/health", tags=["Health"])

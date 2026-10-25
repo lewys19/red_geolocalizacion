@@ -20,3 +20,6 @@ next-env.d.ts
 .vscode/
 .idea/
 .DS_Store
+
+# Fotos subidas en desarrollo
+backend/media/
