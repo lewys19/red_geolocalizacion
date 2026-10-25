@@ -1,5 +1,7 @@
 "use client";
 
+import Link from "next/link";
+
 import { distancia, enlaceComoLlegar, enlaceWhatsapp, hora } from "@/lib/formato";
 import type { PuntoMapa } from "@/lib/tipos";
 
@@ -22,7 +24,11 @@ export function FichaResumen({ punto, alCerrar }: { punto: PuntoMapa; alCerrar: 
     <article className="mx-auto max-w-xl rounded-2xl border border-borde bg-superficie p-4 shadow-lg" aria-live="polite">
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
-          <h2 className="truncate text-lg font-bold">{punto.nombre}</h2>
+          <h2 className="truncate text-lg font-bold">
+            <Link href={`/n/${punto.slug}`} className="hover:underline">
+              {punto.nombre}
+            </Link>
+          </h2>
           <p className="text-sm text-texto-2">
             {punto.categoria} · {punto.distrito}
             {punto.distancia_m !== null && ` · ${distancia(punto.distancia_m)}`}
@@ -44,6 +50,9 @@ export function FichaResumen({ punto, alCerrar }: { punto: PuntoMapa; alCerrar: 
         {punto.direccion}
         {punto.referencia && ` · ${punto.referencia}`}
       </p>
+      <Link href={`/n/${punto.slug}`} className="mt-1 inline-block text-sm font-medium text-marca-fuerte underline">
+        Ver carta, precios y fotos
+      </Link>
       <div className="mt-3 flex gap-2">
         {punto.whatsapp && (
           <a

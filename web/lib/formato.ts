@@ -16,3 +16,16 @@ export function enlaceWhatsapp(numero: string, negocio: string): string {
 export function enlaceComoLlegar(lat: number, lng: number): string {
   return `https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}`;
 }
+
+export function precio(centimos: number | null): string {
+  if (centimos === null) return "Consultar";
+  return `S/ ${(centimos / 100).toFixed(2)}`;
+}
+
+export const DIAS = ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado", "Domingo"];
+
+/** Día de hoy en Lima, 0 = lunes (como en la API). */
+export function hoyEnLima(momento: Date = new Date()): number {
+  const nombre = new Intl.DateTimeFormat("en-US", { weekday: "short", timeZone: "America/Lima" }).format(momento);
+  return ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"].indexOf(nombre);
+}

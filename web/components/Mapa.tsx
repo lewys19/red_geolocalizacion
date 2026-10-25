@@ -16,6 +16,7 @@ const GRIS = "#a8a29e";
 
 export interface PropsMapa {
   categoria: string | null;
+  texto: string; // búsqueda libre ("pollo a la brasa"); vacío = sin filtro
   desde: [number, number] | null; // ubicación de quien busca, para ordenar por cercanía
   elegido: number | null;
   alElegir: (punto: PuntoMapa | null) => void;
@@ -78,7 +79,7 @@ export function Mapa(props: PropsMapa) {
         propsRef.current.alResultado(null);
         return;
       }
-      const { categoria, desde } = propsRef.current;
+      const { categoria, texto, desde } = propsRef.current;
       const params = new URLSearchParams({
         oeste: b.getWest().toFixed(5),
         sur: b.getSouth().toFixed(5),
@@ -86,6 +87,7 @@ export function Mapa(props: PropsMapa) {
         norte: b.getNorth().toFixed(5),
       });
       if (categoria) params.set("categoria", categoria);
+      if (texto) params.set("q", texto);
       if (desde) {
         params.set("lng", desde[0].toFixed(5));
         params.set("lat", desde[1].toFixed(5));
@@ -186,10 +188,10 @@ export function Mapa(props: PropsMapa) {
     };
   }, []);
 
-  // Cambió la categoría o se conoce la ubicación: se vuelve a buscar.
+  // Cambió la categoría, el texto o se conoce la ubicación: se vuelve a buscar.
   useEffect(() => {
     recargarRef.current();
-  }, [props.categoria, props.desde]);
+  }, [props.categoria, props.texto, props.desde]);
 
   // Resalta el negocio elegido.
   useEffect(() => {

@@ -13,3 +13,16 @@ describe("formato", () => {
     expect(enlaceComoLlegar(-12.12, -77.03)).toContain("destination=-12.12,-77.03");
   });
 });
+
+describe("precio y día", async () => {
+  const { precio, hoyEnLima } = await import("./formato");
+  it("muestra soles o consultar", () => {
+    expect(precio(1850)).toBe("S/ 18.50");
+    expect(precio(0)).toBe("S/ 0.00");
+    expect(precio(null)).toBe("Consultar");
+  });
+  it("usa la hora de Lima para el día", () => {
+    // Martes 2026-10-20 23:30 en Lima = miércoles 04:30 UTC.
+    expect(hoyEnLima(new Date("2026-10-21T04:30:00Z"))).toBe(1);
+  });
+});

@@ -95,3 +95,32 @@ def test_distritos(client: TestClient) -> None:
     distritos = client.get("/api/v1/distritos").json()
     assert len(distritos) == 50
     assert "San Juan de Lurigancho" in distritos
+
+
+def test_busqueda_por_texto(client: TestClient, registrar: Callable[..., dict], db: Session) -> None:
+    ana = registrar()
+    polleria = _aprobado(client, db, ana, nombre="La Leñita")  # el nombre no dice "pollo"
+    client.post(
+        f"/api/v1/negocios/{polleria['id']}/productos",
+        json={"nombre": "1/4 de pollo a la brasa", "precio_centimos": 1850},
+        headers=cabeceras(ana),
+    )
+    _aprobado(client, db, ana, nombre="Chifa Dragón", categoria_id=3, ubicacion={"lng": -77.03, "lat": -12.12})
+    _aprobado(client, db, ana, nombre="Ferretería El Clavo", categoria_id=12, ubicacion={"lng": -77.04, "lat": -12.12})
+
+    def buscar(q: str) -> list[str]:
+        return [p["nombre"] for p in client.get("/api/v1/mapa", params={**MIRAFLORES, "q": q}).json()["puntos"]]
+
+    assert buscar("pollo a la brasa") == ["La Leñita"]  # por su carta y su categoría
+    assert buscar("braza") == ["La Leñita"]  # error de tipeo
+    assert buscar("dragon") == ["Chifa Dragón"]  # sin tilde
+    assert buscar("ferreteria") == ["Ferretería El Clavo"]
+    assert buscar("helados de lucuma") == []
+    assert len(buscar("a la de")) == 3  # solo palabras vacías: no filtra
+
+
+def test_palabras_utiles() -> None:
+    from app.services.busqueda import palabras
+
+    assert palabras("Pollo a la Brasa en Miraflores") == ["pollo", "brasa", "miraflores"]
+    assert palabras("Ñandú, ñandú!!") == ["nandu"]

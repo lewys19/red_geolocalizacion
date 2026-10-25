@@ -10,8 +10,21 @@ function aplanar(raices: Categoria[]): Categoria[] {
   return raices.flatMap((c) => (c.hijas.length ? c.hijas : [c]));
 }
 
-export function Buscador({ elegida, alCambiar }: { elegida: string | null; alCambiar: (slug: string | null) => void }) {
+interface PropsBuscador {
+  elegida: string | null;
+  alCambiar: (slug: string | null) => void;
+  alBuscar: (texto: string) => void;
+}
+
+export function Buscador({ elegida, alCambiar, alBuscar }: PropsBuscador) {
   const [categorias, setCategorias] = useState<Categoria[]>([]);
+  const [texto, setTexto] = useState("");
+
+  // Busca solo cuando la persona deja de escribir (400 ms).
+  useEffect(() => {
+    const espera = setTimeout(() => alBuscar(texto.trim()), 400);
+    return () => clearTimeout(espera);
+  }, [texto, alBuscar]);
 
   useEffect(() => {
     pedir<Categoria[]>("/categorias")
@@ -22,20 +35,29 @@ export function Buscador({ elegida, alCambiar }: { elegida: string | null; alCam
   return (
     <div className="pointer-events-none absolute inset-x-0 top-0 z-10 space-y-2 p-3">
       <div className="pointer-events-auto mx-auto max-w-xl">
-        <label className="flex items-center gap-2 rounded-full border border-borde bg-superficie px-4 py-3 shadow-md">
+        <form
+          role="search"
+          onSubmit={(e) => {
+            e.preventDefault();
+            alBuscar(texto.trim());
+            (document.activeElement as HTMLElement | null)?.blur(); // cierra el teclado del celular
+          }}
+          className="flex items-center gap-2 rounded-full border border-borde bg-superficie px-4 py-3 shadow-md"
+        >
           <svg viewBox="0 0 24 24" className="h-5 w-5 text-texto-2" aria-hidden="true">
             <path d="M11 4a7 7 0 1 0 4.3 12.5l4.1 4.1 1.4-1.4-4.1-4.1A7 7 0 0 0 11 4zm0 2a5 5 0 1 1 0 10 5 5 0 0 1 0-10z" fill="currentColor" />
           </svg>
-          <span className="sr-only">Buscar negocios</span>
-          {/* La búsqueda por texto llega en el Sprint 2; por ahora se filtra con las categorías. */}
           <input
             type="search"
-            disabled
-            title="Muy pronto: búsqueda por texto"
+            value={texto}
+            onChange={(e) => setTexto(e.target.value)}
+            aria-label="Buscar negocios"
             placeholder="Pollo a la brasa, ferretería, botica…"
-            className="w-full bg-transparent text-base outline-none placeholder:text-texto-2 disabled:cursor-not-allowed"
+            maxLength={100}
+            enterKeyHint="search"
+            className="w-full bg-transparent text-base outline-none placeholder:text-texto-2"
           />
-        </label>
+        </form>
       </div>
       <div className="pointer-events-auto mx-auto flex max-w-3xl gap-2 overflow-x-auto pb-1 [scrollbar-width:none]">
         {categorias.map((c) => (

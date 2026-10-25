@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { type CSSProperties, useState } from "react";
+import { type CSSProperties, useCallback, useState } from "react";
 
 import type { PuntoMapa } from "@/lib/tipos";
 
@@ -12,9 +12,17 @@ import { Mapa } from "./Mapa";
 /** Pantalla principal: mapa + categorías + ficha del negocio elegido. */
 export function Explorador() {
   const [categoria, setCategoria] = useState<string | null>(null);
+  const [texto, setTexto] = useState("");
   const [desde, setDesde] = useState<[number, number] | null>(null);
   const [elegido, setElegido] = useState<PuntoMapa | null>(null);
   const [total, setTotal] = useState<number | null | undefined>(undefined); // undefined = cargando
+
+  const buscar = useCallback((t: string) => {
+    setTexto((anterior) => {
+      if (anterior !== t) setElegido(null);
+      return t;
+    });
+  }, []);
 
   // Los controles del mapa suben por encima de lo que se muestra abajo (ver globals.css).
   const estilo = { "--alto-panel": elegido ? "230px" : "96px" } as CSSProperties;
@@ -23,6 +31,7 @@ export function Explorador() {
     <section className="relative flex-1" style={estilo}>
       <Mapa
         categoria={categoria}
+        texto={texto}
         desde={desde}
         elegido={elegido?.id ?? null}
         alElegir={setElegido}
@@ -30,6 +39,7 @@ export function Explorador() {
         alResultado={setTotal}
       />
       <Buscador
+        alBuscar={buscar}
         elegida={categoria}
         alCambiar={(slug) => {
           setCategoria(slug);
@@ -48,8 +58,12 @@ export function Explorador() {
                   : total === null
                     ? "Acerca el mapa para ver los negocios."
                     : total === 0
-                      ? "No hay negocios aquí todavía."
-                      : `${total} ${total === 1 ? "negocio" : "negocios"} en esta zona`}
+                      ? texto
+                        ? `Nada para «${texto}» en esta zona. Prueba alejando el mapa.`
+                        : "No hay negocios aquí todavía."
+                      : texto
+                        ? `${total} ${total === 1 ? "resultado" : "resultados"} para «${texto}»`
+                        : `${total} ${total === 1 ? "negocio" : "negocios"} en esta zona`}
               </p>
               <Link
                 href="/negocios/nuevo"

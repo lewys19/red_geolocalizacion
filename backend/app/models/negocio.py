@@ -1,7 +1,7 @@
 from datetime import datetime
 
 from geoalchemy2 import Geography, WKBElement
-from sqlalchemy import Boolean, DateTime, ForeignKey, Index, Numeric, String, Text, false, func
+from sqlalchemy import Boolean, DateTime, ForeignKey, Index, Numeric, String, Text, false, func, text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.core.database import Base
@@ -11,7 +11,16 @@ from app.models.enums import EstadoNegocio, RolMiembro, tipo_enum
 class Negocio(Base):
     __tablename__ = "negocios"
     # Índice espacial (GIST): es lo que hace instantánea la pregunta "qué hay en este recuadro".
-    __table_args__ = (Index("ix_negocios_ubicacion", "ubicacion", postgresql_using="gist"),)
+    __table_args__ = (
+        Index("ix_negocios_ubicacion", "ubicacion", postgresql_using="gist"),
+        # Búsqueda por nombre tolerante a tildes y errores (migración 0004).
+        Index(
+            "ix_negocios_nombre_trgm",
+            text("f_unaccent(lower(nombre))"),
+            postgresql_using="gin",
+            postgresql_ops={"f_unaccent(lower(nombre))": "gin_trgm_ops"},
+        ),
+    )
 
     id: Mapped[int] = mapped_column(primary_key=True)
     nombre: Mapped[str] = mapped_column(String(120))

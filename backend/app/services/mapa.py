@@ -18,6 +18,7 @@ from app.core.errores import ErrorNegocio
 from app.core.fechas import ahora
 from app.models import Categoria, EstadoNegocio, Negocio
 from app.schemas.negocio import GrupoMapa, MapaOut, PuntoMapa
+from app.services.busqueda import palabras, puntaje
 from app.services.horarios import estado_atencion
 
 CELDAS_POR_LADO = 8
@@ -47,25 +48,33 @@ def buscar(
     categoria: str | None = None,
     desde: tuple[float, float] | None = None,
     momento: datetime | None = None,
+    texto: str | None = None,
 ) -> MapaOut:
     if not (oeste < este and sur < norte):
         raise ErrorNegocio(status.HTTP_400_BAD_REQUEST, "Recuadro del mapa no válido.")
     if este - oeste > settings.MAX_LADO_RECUADRO or norte - sur > settings.MAX_LADO_RECUADRO:
         raise ErrorNegocio(status.HTTP_400_BAD_REQUEST, "Acerca un poco el mapa para ver los negocios.")
     recuadro = (oeste, sur, este, norte)
+    buscadas = palabras(texto) if texto else []
+    relevancia = puntaje(buscadas) if buscadas else None
 
-    total = db.scalar(_filtrar(select(func.count()).select_from(Negocio), recuadro, categoria)) or 0
+    def filtrar(consulta: Select) -> Select:
+        consulta = _filtrar(consulta, recuadro, categoria)
+        return consulta.where(relevancia > 0) if relevancia is not None else consulta
+
+    total = db.scalar(filtrar(select(func.count()).select_from(Negocio))) or 0
     if total == 0:
         return MapaOut(total=0, puntos=[], grupos=[])
 
-    if total > settings.LIMITE_PUNTOS_MAPA:
+    # Con texto no se agrupa: se muestran los más relevantes, uno por uno.
+    if total > settings.LIMITE_PUNTOS_MAPA and relevancia is None:
         geom = cast(Negocio.ubicacion, Geometry(srid=4326))
         tam = max(este - oeste, norte - sur) / CELDAS_POR_LADO
         centro = func.ST_Centroid(func.ST_Collect(geom))
         filas = db.execute(
-            _filtrar(
-                select(func.ST_X(centro), func.ST_Y(centro), func.count()).select_from(Negocio), recuadro, categoria
-            ).group_by(func.ST_SnapToGrid(geom, tam))
+            filtrar(select(func.ST_X(centro), func.ST_Y(centro), func.count()).select_from(Negocio)).group_by(
+                func.ST_SnapToGrid(geom, tam)
+            )
         ).all()
         return MapaOut(total=total, puntos=[], grupos=[GrupoMapa(lng=x, lat=y, cantidad=n) for x, y, n in filas])
 
@@ -76,13 +85,18 @@ def buscar(
         else None
     )
     columnas = [Negocio, func.ST_X(geom), func.ST_Y(geom), Categoria.nombre]
-    consulta = _filtrar(
-        select(*columnas, *([distancia] if distancia is not None else []))
-        .join(Categoria, Categoria.id == Negocio.categoria_id)
-        .options(selectinload(Negocio.horarios)),
-        recuadro,
-        categoria,
-    ).order_by(distancia if distancia is not None else Negocio.nombre)
+    orden = [distancia if distancia is not None else Negocio.nombre]
+    if relevancia is not None:
+        orden.insert(0, relevancia.desc())
+    consulta = (
+        filtrar(
+            select(*columnas, *([distancia] if distancia is not None else []))
+            .join(Categoria, Categoria.id == Negocio.categoria_id)
+            .options(selectinload(Negocio.horarios))
+        )
+        .order_by(*orden)
+        .limit(settings.LIMITE_PUNTOS_MAPA)
+    )
 
     momento = momento or ahora()
     puntos = []
