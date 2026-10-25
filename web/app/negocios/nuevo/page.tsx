@@ -11,6 +11,12 @@ import { LIMA } from "@/lib/mapaBase";
 import type { Categoria, Negocio } from "@/lib/tipos";
 import { useSesion } from "@/lib/usarSesion";
 
+interface Sugerencia {
+  direccion: string | null;
+  distrito: string | null;
+  completa: string;
+}
+
 const PASOS = ["Tu negocio", "Ubicación", "Horario"];
 
 interface Datos {
@@ -52,6 +58,26 @@ export default function NuevoNegocio() {
   const [error, setError] = useState<string | null>(null);
   const [enviando, setEnviando] = useState(false);
   const [creado, setCreado] = useState<Negocio | null>(null);
+  const [sugerencia, setSugerencia] = useState<Sugerencia | null>(null);
+
+  // Al mover el pin se pide la dirección de ese punto (reverse geocoding). Espera 600 ms quieto.
+  useEffect(() => {
+    if (!pinMovido) return;
+    const espera = setTimeout(() => {
+      pedir<Sugerencia>(`/geocoding/inverso?lng=${pin[0].toFixed(6)}&lat=${pin[1].toFixed(6)}`, { conSesion: true })
+        .then((s) => {
+          setSugerencia(s);
+          // Si todavía no escribió nada, se completa solo; si ya escribió, solo se sugiere.
+          setDatos((d) => ({
+            ...d,
+            direccion: d.direccion || s.direccion || "",
+            distrito: d.distrito || s.distrito || "",
+          }));
+        })
+        .catch(() => setSugerencia(null));
+    }, 600);
+    return () => clearTimeout(espera);
+  }, [pin, pinMovido]);
 
   useEffect(() => {
     pedir<Categoria[]>("/categorias").then(setCategorias).catch(() => {});
@@ -212,6 +238,22 @@ export default function NuevoNegocio() {
             </label>
             <Campo etiqueta="Dirección" required minLength={5} maxLength={200} placeholder="Av. Larco 345" {...campo("direccion")} />
             <Campo etiqueta="Referencia (opcional)" maxLength={200} placeholder="Frente al parque" {...campo("referencia")} />
+            {sugerencia && (sugerencia.direccion || sugerencia.distrito) &&
+              (sugerencia.direccion !== datos.direccion || (sugerencia.distrito ?? "") !== datos.distrito) && (
+                <button
+                  type="button"
+                  onClick={() =>
+                    setDatos({
+                      ...datos,
+                      direccion: sugerencia.direccion ?? datos.direccion,
+                      distrito: sugerencia.distrito ?? datos.distrito,
+                    })
+                  }
+                  className="w-full rounded-lg border border-dashed border-marca bg-marca-suave px-3 py-2 text-left text-sm text-marca-fuerte"
+                >
+                  Usar: <strong>{[sugerencia.direccion, sugerencia.distrito].filter(Boolean).join(", ")}</strong>
+                </button>
+              )}
             <SelectorPin
               valor={pin}
               alCambiar={(lngLat) => {

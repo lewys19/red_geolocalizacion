@@ -11,6 +11,7 @@ from sqlalchemy import text
 
 from app import models  # noqa: F401  (importa los modelos para registrarlos)
 from app.api.v1.api import api_router
+from app.core.cache import cliente_redis
 from app.core.config import settings
 from app.core.database import engine
 from app.core.errores import ErrorNegocio, manejar_error_negocio
@@ -53,7 +54,7 @@ def health_check() -> JSONResponse:
     except Exception:  # noqa: BLE001  (cualquier fallo de la base = no saludable)
         estado["db"] = "error"
     try:
-        redis.Redis.from_url(settings.REDIS_URL, socket_timeout=2).ping()
+        cliente_redis().ping()
         estado["redis"] = "ok"
     except redis.RedisError:
         estado["redis"] = "error"

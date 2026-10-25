@@ -146,3 +146,9 @@ class MapaOut(BaseModel):
     total: int
     puntos: list[PuntoMapa]
     grupos: list[GrupoMapa]
+
+
+class DireccionSugeridaOut(BaseModel):
+    direccion: str | None
+    distrito: str | None
+    completa: str

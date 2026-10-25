@@ -33,6 +33,14 @@ class Settings(BaseSettings):
     MAX_LADO_RECUADRO: float = 1.0
     MAX_PENDIENTES_POR_USUARIO: int = 5
 
+    # Geocodificación (dirección ↔ coordenadas). "nominatim" (OpenStreetMap, gratis) o "ninguno".
+    # Nominatim exige identificar la app con un contacto real y máximo 1 petición por segundo:
+    # https://operations.osmfoundation.org/policies/nominatim/
+    GEOCODING_PROVEEDOR: str = "nominatim"
+    NOMINATIM_URL: str = "https://nominatim.openstreetmap.org"
+    GEOCODING_CONTACTO: str = ""  # email o web de contacto que va en el User-Agent
+    DIAS_CACHE_GEOCODING: int = 30
+
 
 # Instancia única que importaremos en el resto del proyecto.
 settings = Settings()
