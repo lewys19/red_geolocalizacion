@@ -1,0 +1,63 @@
+@import "tailwindcss";
+
+/* Marca Altoque: naranja cálido ("al toque", rápido) sobre fondo claro. */
+:root {
+  --fondo: #ffffff;
+  --superficie: #ffffff;
+  --texto: #1c1917;
+  --texto-2: #57534e;
+  --borde: #e7e5e4;
+  --marca: #ea580c;
+  --marca-fuerte: #c2410c;
+  --marca-suave: #fff7ed;
+  --sobre-marca: #ffffff;
+  --error: #b91c1c;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --fondo: #0c0a09;
+    --superficie: #1c1917;
+    --texto: #fafaf9;
+    --texto-2: #a8a29e;
+    --borde: #292524;
+    --marca: #fb923c;
+    --marca-fuerte: #fdba74;
+    --marca-suave: #431407;
+    --sobre-marca: #1c1917;
+    --error: #f87171;
+  }
+}
+
+@theme inline {
+  --color-fondo: var(--fondo);
+  --color-superficie: var(--superficie);
+  --color-texto: var(--texto);
+  --color-texto-2: var(--texto-2);
+  --color-borde: var(--borde);
+  --color-marca: var(--marca);
+  --color-marca-fuerte: var(--marca-fuerte);
+  --color-marca-suave: var(--marca-suave);
+  --color-sobre-marca: var(--sobre-marca);
+  --color-error: var(--error);
+  --font-sans: var(--font-geist-sans);
+}
+
+body {
+  background: var(--fondo);
+  color: var(--texto);
+}
+
+/* Todo lo que se puede pulsar muestra la manito. */
+button:not(:disabled),
+a,
+summary {
+  cursor: pointer;
+}
+
+/* Los controles del mapa (zoom, ubicación, créditos de OpenStreetMap) suben por encima
+   del panel inferior. Cada pantalla define --alto-panel según lo que muestre abajo. */
+.maplibregl-ctrl-bottom-right,
+.maplibregl-ctrl-bottom-left {
+  margin-bottom: var(--alto-panel, 0px);
+}

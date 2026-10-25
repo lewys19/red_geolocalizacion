@@ -1,0 +1,72 @@
+# Altoque completo en tu equipo (igual que en producción):
+#   1. cp .env.example .env   y completa SECRET_KEY y DB_PASSWORD
+#   2. docker compose up -d --build
+#   3. web: http://localhost:3100   ·   API y su documentación: http://localhost:8100/docs
+# Para programar el backend con .venv basta levantar la base y Redis: docker compose up -d db redis
+services:
+  db:
+    image: postgis/postgis:17-3.5-alpine
+    container_name: altoque-db
+    environment:
+      POSTGRES_DB: altoque
+      POSTGRES_USER: altoque
+      POSTGRES_PASSWORD: ${DB_PASSWORD:?Falta DB_PASSWORD en el archivo .env}
+    volumes:
+      - altoque-db:/var/lib/postgresql/data
+    # Solo accesible desde este equipo (127.0.0.1), para el .venv y las pruebas.
+    ports:
+      - "127.0.0.1:${PUERTO_DB:-5433}:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U altoque -d altoque"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+
+  redis:
+    image: redis:7.4-alpine
+    container_name: altoque-redis
+    ports:
+      - "127.0.0.1:${PUERTO_REDIS:-6380}:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    restart: unless-stopped
+
+  api:
+    build: ./backend
+    container_name: altoque-api
+    environment:
+      DATABASE_URL: postgresql+psycopg://altoque:${DB_PASSWORD}@db:5432/altoque
+      REDIS_URL: redis://redis:6379/0
+      SECRET_KEY: ${SECRET_KEY:?Falta SECRET_KEY en el archivo .env (mínimo 32 caracteres)}
+      CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:3100}
+    ports:
+      - "${PUERTO_API:-8100}:8000"
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
+      interval: 10s
+      timeout: 5s
+      retries: 6
+      start_period: 15s
+    restart: unless-stopped
+
+  web:
+    build: ./web
+    container_name: altoque-web
+    ports:
+      - "${PUERTO_WEB:-3100}:3000"
+    depends_on:
+      api:
+        condition: service_healthy
+    restart: unless-stopped
+
+volumes:
+  altoque-db:
