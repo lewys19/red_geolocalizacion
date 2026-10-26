@@ -33,6 +33,14 @@ describe("pedir", () => {
     guardarSesion(null);
   });
 
+  it("si la respuesta no llega a tiempo, avisa en vez de esperar para siempre", async () => {
+    fetchFalso.mockRejectedValueOnce(new DOMException("se acabó el tiempo", "TimeoutError"));
+    const error = await pedir("/auth/login", { metodo: "POST", cuerpo: {} }).catch((e: unknown) => e);
+    expect(error).toBeInstanceOf(ErrorApi);
+    expect((error as ErrorApi).estado).toBe(0);
+    expect((error as ErrorApi).message).toContain("tardó demasiado");
+  });
+
   it("envía el token de acceso solo cuando se pide", async () => {
     fetchFalso.mockImplementation(async () => respuesta(200, []));
     await pedir("/categorias");

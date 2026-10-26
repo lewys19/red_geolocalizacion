@@ -60,6 +60,9 @@ export async function pedir<T>(
 ): Promise<T> {
   // Un FormData (fotos) se envía tal cual: el navegador pone el Content-Type con su separador.
   const esArchivo = cuerpo instanceof FormData;
+  // Nunca esperar para siempre: si la respuesta se pierde, el formulario muestra un error en vez de quedarse
+  // en "Un momento…". Las fotos tienen más margen (redes móviles lentas).
+  const limite = AbortSignal.timeout(esArchivo ? 60_000 : 20_000);
   const enviar = (sesion: Sesion | null) =>
     fetch(`${BASE}${ruta}`, {
       method: metodo,
@@ -68,10 +71,18 @@ export async function pedir<T>(
         ...(conSesion && sesion ? { Authorization: `Bearer ${sesion.token_acceso}` } : {}),
       },
       body: esArchivo ? cuerpo : cuerpo !== undefined ? JSON.stringify(cuerpo) : undefined,
-      signal: senal,
+      signal: senal ? AbortSignal.any([senal, limite]) : limite,
     });
 
-  let r = await enviar(leerSesion());
+  let r: Response;
+  try {
+    r = await enviar(leerSesion());
+  } catch (e) {
+    if (e instanceof DOMException && e.name === "TimeoutError") {
+      throw new ErrorApi(0, "El servidor tardó demasiado en responder. Inténtalo otra vez.");
+    }
+    throw e;
+  }
   if (r.status === 401 && conSesion) {
     // El acceso venció: se pide uno nuevo con el refresco y se reintenta una vez.
     const nueva = await refrescar();
@@ -87,7 +98,8 @@ export async function conReintentos<T>(leer: () => Promise<T>, intentos = 2, esp
     try {
       return await leer();
     } catch (e) {
-      const reintentable = (e instanceof ErrorApi && e.estado >= 500) || e instanceof TypeError;
+      // estado 0 = no respondió a tiempo.
+      const reintentable = (e instanceof ErrorApi && (e.estado >= 500 || e.estado === 0)) || e instanceof TypeError;
       if (!reintentable || i >= intentos) throw e;
       await new Promise((r) => setTimeout(r, esperaMs));
     }
