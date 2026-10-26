@@ -152,7 +152,11 @@ const EXTERNOS = [
   },
   {
     id: "microsoft",
-    texto: "Continuar con Hotmail / Outlook",
+    texto: (
+      <>
+        Continuar con Hotmail<span className="hidden sm:inline">&nbsp;/ Outlook</span>
+      </>
+    ),
     icono: (
       <svg viewBox="0 0 21 21" className="h-5 w-5" aria-hidden="true">
         <path fill="#F25022" d="M1 1h9v9H1z" />
