@@ -9,12 +9,13 @@ import { Boton, MensajeError, Tarjeta } from "@/components/Formulario";
 import { BotonAcceso } from "@/components/VentanaAcceso";
 import { PanelCarta } from "@/components/PanelCarta";
 import { PanelFotos } from "@/components/PanelFotos";
+import { PanelPerfil } from "@/components/PanelPerfil";
 import { ErrorApi, pedir } from "@/lib/api";
 import { LIMA } from "@/lib/mapaBase";
 import type { Catalogo, NegocioDetalle } from "@/lib/tipos";
 import { useSesion } from "@/lib/usarSesion";
 
-const PESTANAS = ["Datos", "Carta", "Fotos"] as const;
+const PESTANAS = ["Perfil", "Datos", "Carta", "Fotos"] as const;
 type Pestana = (typeof PESTANAS)[number];
 
 function aDatos(n: NegocioDetalle): DatosNegocio {
@@ -35,8 +36,8 @@ export default function PanelNegocio({ params }: { params: Promise<{ id: string 
   const { id } = use(params);
   const sesion = useSesion();
   const [negocio, setNegocio] = useState<NegocioDetalle | null>(null);
-  const [catalogo, setCatalogo] = useState<Catalogo>({ productos: [], fotos: [] });
-  const [pestana, setPestana] = useState<Pestana>("Datos");
+  const [catalogo, setCatalogo] = useState<Catalogo>({ productos: [], fotos: [], logo: null, portada: null });
+  const [pestana, setPestana] = useState<Pestana>("Perfil");
   const [datos, setDatos] = useState<DatosNegocio | null>(null);
   const [pin, setPin] = useState<[number, number]>(LIMA);
   const [semana, setSemana] = useState<HorarioSemana | null>(null);
@@ -106,7 +107,7 @@ export default function PanelNegocio({ params }: { params: Promise<{ id: string 
         <h1 className="text-2xl font-bold tracking-tight">{negocio.nombre}</h1>
         {negocio.estado === "aprobado" && (
           <Link href={`/n/${negocio.slug}`} className="text-sm font-medium text-marca-fuerte underline">
-            Ver mi página pública
+            Ver mi perfil público
           </Link>
         )}
       </div>
@@ -139,6 +140,15 @@ export default function PanelNegocio({ params }: { params: Promise<{ id: string 
       </div>
 
       <div className="mt-4 rounded-2xl border border-borde bg-superficie p-5 shadow-sm">
+        {pestana === "Perfil" && (
+          <PanelPerfil
+            negocioId={negocio.id}
+            nombre={negocio.nombre}
+            logo={catalogo.logo}
+            portada={catalogo.portada}
+            alCambiar={(tipo, url) => setCatalogo((c) => ({ ...c, [tipo]: url }))}
+          />
+        )}
         {pestana === "Datos" && (
           <form onSubmit={guardar} className="space-y-4">
             <CamposDatos datos={datos} alCambiar={setDatos} />

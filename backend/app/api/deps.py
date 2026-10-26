@@ -48,6 +48,18 @@ def usuario_actual(
 UsuarioActual = Annotated[Usuario, Depends(usuario_actual)]
 
 
+def usuario_opcional(
+    db: Db, credenciales: Annotated[HTTPAuthorizationCredentials | None, Depends(_bearer)]
+) -> Usuario | None:
+    """Para lo público que cambia un poco con sesión (p. ej. marcar tu reacción). Sin token = visitante."""
+    if credenciales is None:
+        return None
+    return usuario_actual(db, credenciales)  # token vencido → 401, y la web lo refresca
+
+
+UsuarioOpcional = Annotated[Usuario | None, Depends(usuario_opcional)]
+
+
 def requiere_rol(*roles: RolPlataforma) -> Callable[[Usuario], Usuario]:
     """El superadmin pasa siempre; el resto, solo si su rol está en la lista."""
 

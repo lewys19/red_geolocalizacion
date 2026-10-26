@@ -96,6 +96,11 @@ export interface Ficha {
   fotos: Foto[];
   calificacion_promedio: number | null;
   total_resenas: number;
+  logo: string | null;
+  portada: string | null;
+  seguidores: number;
+  total_reacciones: number;
+  total_publicaciones: number;
 }
 
 /** Lo que ve el dueño de su negocio (GET /negocios/mios/{id}). */
@@ -113,6 +118,8 @@ export interface NegocioDetalle extends Negocio {
 export interface Catalogo {
   productos: Producto[];
   fotos: Foto[];
+  logo: string | null;
+  portada: string | null;
 }
 
 /** Un negocio en pocas palabras: círculos del Inicio, tarjetas y cabecera de publicación. */
@@ -132,6 +139,31 @@ export interface Publicacion {
   creado_en: string;
   negocio: NegocioMini;
   fotos: Foto[];
+  reacciones: Record<TipoReaccion, number>;
+  total_reacciones: number;
+  total_comentarios: number;
+  mi_reaccion: TipoReaccion | null;
+}
+
+export type TipoReaccion = "me_gusta" | "me_encanta" | "wow";
+
+export interface Reacciones {
+  reacciones: Record<TipoReaccion, number>;
+  total: number;
+  mi_reaccion: TipoReaccion | null;
+}
+
+export interface Comentario {
+  id: number;
+  texto: string;
+  creado_en: string;
+  autor: { id: number; nombre: string };
+}
+
+export interface Comentarios {
+  comentarios: Comentario[];
+  siguiente: number | null;
+  total: number;
 }
 
 export interface Muro {

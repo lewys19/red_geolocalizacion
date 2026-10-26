@@ -12,7 +12,7 @@ from app.core.errores import ErrorNegocio
 from app.models import Categoria, EstadoNegocio, FotoPublicacion, Negocio, Publicacion, Usuario
 from app.schemas.catalogo import FotoOut
 from app.schemas.publicacion import MuroOut, NegocioMini, PublicacionOut
-from app.services import imagenes
+from app.services import imagenes, social
 from app.services.negocios import exigir_miembro
 
 MAX_FOTOS_POR_PUBLICACION = 4
@@ -24,14 +24,14 @@ def _origen(lng: float, lat: float):  # type: ignore[no-untyped-def]
 
 
 def mini(negocio: Negocio, categoria: str, almacen: Almacen, distancia_m: float | None = None) -> NegocioMini:
-    primera = negocio.fotos[0] if negocio.fotos else None
+    clave = negocio.logo_clave or (negocio.fotos[0].clave if negocio.fotos else None)
     return NegocioMini(
         id=negocio.id,
         slug=negocio.slug,
         nombre=negocio.nombre,
         categoria=categoria,
         distrito=negocio.distrito,
-        foto=almacen.url(primera.clave) if primera else None,
+        foto=almacen.url(clave) if clave else None,
         distancia_m=round(distancia_m) if distancia_m is not None else None,
     )
 
@@ -90,13 +90,19 @@ def borrar(db: Session, almacen: Almacen, usuario: Usuario, negocio_id: int, pub
         almacen.borrar(clave)
 
 
-def _a_salida(p: Publicacion, categoria: str, almacen: Almacen, distancia_m: float | None) -> PublicacionOut:
+def _a_salida(
+    p: Publicacion, categoria: str, almacen: Almacen, distancia_m: float | None, resumen: social.Resumen
+) -> PublicacionOut:
     return PublicacionOut(
         id=p.id,
         texto=p.texto,
         creado_en=p.creado_en,
         negocio=mini(p.negocio, categoria, almacen, distancia_m),
         fotos=[FotoOut(id=f.id, url=almacen.url(f.clave), ancho=f.ancho, alto=f.alto) for f in p.fotos],
+        reacciones=resumen.reacciones,
+        total_reacciones=resumen.total,
+        total_comentarios=resumen.comentarios,
+        mi_reaccion=resumen.mi_reaccion,  # type: ignore[arg-type]
     )
 
 
@@ -108,7 +114,7 @@ def _cargar_una(db: Session, almacen: Almacen, publicacion_id: int) -> Publicaci
         .options(selectinload(Publicacion.fotos), selectinload(Publicacion.negocio).selectinload(Negocio.fotos))
         .where(Publicacion.id == publicacion_id)
     ).one()
-    return _a_salida(p, categoria, almacen, None)
+    return _a_salida(p, categoria, almacen, None, social.Resumen())
 
 
 # ---------- Muro ----------
@@ -122,6 +128,7 @@ def muro(
     antes_de: int | None = None,
     limite: int = 20,
     negocio_slug: str | None = None,
+    usuario: Usuario | None = None,
 ) -> MuroOut:
     """Lo más nuevo primero. Con ubicación, solo de negocios dentro del radio (y con su distancia).
     Con negocio_slug, el muro de ese negocio (su página de perfil)."""
@@ -141,8 +148,11 @@ def muro(
     filas = db.execute(consulta.order_by(Publicacion.id.desc()).limit(limite + 1)).all()
     hay_mas = len(filas) > limite
     filas = filas[:limite]
+    resumen = social.resumenes(db, [f[0].id for f in filas], usuario)
     return MuroOut(
-        publicaciones=[_a_salida(f[0], f[1], almacen, f[2] if distancia is not None else None) for f in filas],
+        publicaciones=[
+            _a_salida(f[0], f[1], almacen, f[2] if distancia is not None else None, resumen[f[0].id]) for f in filas
+        ],
         siguiente=filas[-1][0].id if hay_mas else None,
     )
 

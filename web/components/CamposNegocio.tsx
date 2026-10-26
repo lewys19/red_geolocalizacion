@@ -173,7 +173,7 @@ export function CamposUbicacion({
   return (
     <>
       <label className="block">
-        <span className="mb-1.5 block text-sm font-medium text-texto-2">Distrito</span>
+        <span className="mb-1.5 block text-sm font-medium text-texto-2">Distrito *</span>
         <select required className={SELECT} {...campo("distrito")}>
           <option value="">Elige tu distrito…</option>
           {distritos.map((d) => (
@@ -181,7 +181,8 @@ export function CamposUbicacion({
           ))}
         </select>
       </label>
-      <Campo etiqueta="Dirección" required minLength={5} maxLength={200} placeholder="Av. Larco 345" {...campo("direccion")} />
+      {/* La dirección y el pin son lo que pone al negocio en el mapa. */}
+      <Campo etiqueta="Dirección *" required minLength={5} maxLength={200} placeholder="Av. Larco 345" {...campo("direccion")} />
       <Campo etiqueta="Referencia (opcional)" maxLength={200} placeholder="Frente al parque" {...campo("referencia")} />
       {ofrecer && sugerencia && (
         <button

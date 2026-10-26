@@ -3,7 +3,7 @@ from typing import Annotated
 from fastapi import APIRouter, Depends, File, Form, Query, Response, UploadFile, status
 
 from app.almacen import Almacen, obtener_almacen
-from app.api.deps import Db, UsuarioActual
+from app.api.deps import Db, UsuarioActual, UsuarioOpcional
 from app.core.config import settings
 from app.core.errores import ErrorNegocio
 from app.schemas.publicacion import MuroOut, NegocioMini, PublicacionOut
@@ -52,6 +52,7 @@ def borrar(negocio_id: int, publicacion_id: int, usuario: UsuarioActual, db: Db,
 def muro(
     db: Db,
     almacen: AlmacenFotos,
+    usuario: UsuarioOpcional,
     lng: Grados | None = None,
     lat: Grados | None = None,
     radio_m: Radio = 50_000,
@@ -60,7 +61,7 @@ def muro(
 ) -> MuroOut:
     """Publicaciones de los negocios, lo más nuevo primero. Sin ubicación: de todos (general).
     Con lng/lat: solo de negocios dentro del radio. Página siguiente: ?antes_de=<siguiente>."""
-    return publicaciones.muro(db, almacen, _desde(lng, lat), radio_m, antes_de, limite)
+    return publicaciones.muro(db, almacen, _desde(lng, lat), radio_m, antes_de, limite, usuario=usuario)
 
 
 @router.get("/negocios/ficha/{slug}/publicaciones", response_model=MuroOut)
@@ -68,10 +69,11 @@ def muro_del_negocio(
     slug: str,
     db: Db,
     almacen: AlmacenFotos,
+    usuario: UsuarioOpcional,
     antes_de: Annotated[int | None, Query(ge=1)] = None,
 ) -> MuroOut:
     """El muro de un negocio: sus publicaciones, en su página de perfil."""
-    return publicaciones.muro(db, almacen, antes_de=antes_de, negocio_slug=slug)
+    return publicaciones.muro(db, almacen, antes_de=antes_de, negocio_slug=slug, usuario=usuario)
 
 
 @router.get("/negocios/lista", response_model=list[NegocioMini])

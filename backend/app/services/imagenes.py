@@ -20,8 +20,9 @@ LADO_MAXIMO = 1600
 Image.MAX_IMAGE_PIXELS = 60_000_000
 
 
-def procesar(datos: bytes) -> tuple[bytes, int, int]:
-    """Devuelve (webp, ancho, alto)."""
+def procesar(datos: bytes, recorte: tuple[int, int] | None = None) -> tuple[bytes, int, int]:
+    """Devuelve (webp, ancho, alto). Con `recorte` (ancho, alto) se recorta al centro a esa medida:
+    la foto de perfil (cuadrada) y la portada (3:1)."""
     if len(datos) > settings.MAX_MB_FOTO * 1024 * 1024:
         raise ErrorNegocio(status.HTTP_413_CONTENT_TOO_LARGE, f"La foto pesa más de {settings.MAX_MB_FOTO} MB.")
     try:
@@ -30,7 +31,10 @@ def procesar(datos: bytes) -> tuple[bytes, int, int]:
                 raise ErrorNegocio(status.HTTP_415_UNSUPPORTED_MEDIA_TYPE, "Sube una foto JPG, PNG o WebP.")
             imagen = ImageOps.exif_transpose(original)
             imagen = imagen.convert("RGBA" if imagen.mode in ("RGBA", "LA", "P") else "RGB")
-            imagen.thumbnail((LADO_MAXIMO, LADO_MAXIMO))
+            if recorte:
+                imagen = ImageOps.fit(imagen, recorte)
+            else:
+                imagen.thumbnail((LADO_MAXIMO, LADO_MAXIMO))
             salida = io.BytesIO()
             imagen.save(salida, "WEBP", quality=82, method=4)  # sin exif=…: no se copian metadatos
             return salida.getvalue(), imagen.width, imagen.height

@@ -34,6 +34,9 @@ class Negocio(Base):
     ubicacion: Mapped[WKBElement] = mapped_column(
         Geography(geometry_type="POINT", srid=4326, spatial_index=False)
     )
+    # Foto de perfil (cuadrada) y portada (3:1) en el almacén de fotos.
+    logo_clave: Mapped[str | None] = mapped_column(String(200))
+    portada_clave: Mapped[str | None] = mapped_column(String(200))
     telefono: Mapped[str | None] = mapped_column(String(20))
     whatsapp: Mapped[str | None] = mapped_column(String(20))
     tiene_delivery: Mapped[bool] = mapped_column(Boolean, default=False)

@@ -1,6 +1,8 @@
-// Una publicación del muro. Sin estado ni efectos: sirve tanto en el Inicio (cliente)
-// como en la página del negocio (armada en el servidor para Google).
+// Una publicación del muro. Se arma igual en el Inicio (cliente) y en la página del negocio
+// (servidor, para Google); solo la barra de reacciones y comentarios es interactiva.
 import Link from "next/link";
+
+import { AccionesPublicacion } from "./AccionesPublicacion";
 
 import { distancia, hace } from "@/lib/formato";
 import type { Foto, NegocioMini, Publicacion } from "@/lib/tipos";
@@ -39,7 +41,7 @@ function Mosaico({ fotos, nombre }: { fotos: Foto[]; nombre: string }) {
 
 export function TarjetaPublicacion({ publicacion: p, ahora }: { publicacion: Publicacion; ahora?: Date }) {
   return (
-    <article className="rounded-2xl border border-borde bg-superficie p-4 shadow-sm">
+    <article id={`publicacion-${p.id}`} className="scroll-mt-20 rounded-2xl border border-borde bg-superficie p-4 shadow-sm">
       <header className="flex items-center gap-3">
         <Link href={`/n/${p.negocio.slug}`}>
           <Avatar negocio={p.negocio} />
@@ -56,6 +58,7 @@ export function TarjetaPublicacion({ publicacion: p, ahora }: { publicacion: Pub
       </header>
       {p.texto && <p className="mt-3 whitespace-pre-line text-[15px]">{p.texto}</p>}
       <Mosaico fotos={p.fotos} nombre={p.negocio.nombre} />
+      <AccionesPublicacion publicacion={p} />
     </article>
   );
 }

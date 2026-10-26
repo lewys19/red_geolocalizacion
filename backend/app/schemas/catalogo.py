@@ -66,6 +66,11 @@ class FichaOut(BaseModel):
     fotos: list[FotoOut]
     calificacion_promedio: float | None
     total_resenas: int
+    logo: str | None
+    portada: str | None
+    seguidores: int
+    total_reacciones: int  # "me gusta" sumados de todas sus publicaciones
+    total_publicaciones: int
 
 
 class CatalogoOut(BaseModel):
@@ -73,3 +78,5 @@ class CatalogoOut(BaseModel):
 
     productos: list[ProductoOut]
     fotos: list[FotoOut]
+    logo: str | None
+    portada: str | None

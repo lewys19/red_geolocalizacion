@@ -156,6 +156,8 @@ function Publicidad() {
 /** Pestaña Inicio: el muro con las publicaciones de los negocios. */
 export function Inicio() {
   const ubicacion = useUbicacion();
+  const sesion = useSesion();
+  const usuarioId = sesion?.usuario.id ?? null;
   const [modo, setModo] = useState<Modo>("general");
   const [radioKm, setRadioKm] = useState(10);
   const [publicaciones, setPublicaciones] = useState<Publicacion[] | null>(null);
@@ -183,7 +185,7 @@ export function Inicio() {
     const control = new AbortController();
     // Con el deslizador del radio, espera a que la persona lo suelte.
     const espera = setTimeout(() => {
-      conReintentos(() => pedir<Muro>(`/muro?${parametros()}`, { senal: control.signal }))
+      conReintentos(() => pedir<Muro>(`/muro?${parametros()}`, { senal: control.signal, conSesion: true }))
         .then((m) => {
           setPublicaciones(m.publicaciones);
           setSiguiente(m.siguiente);
@@ -195,13 +197,14 @@ export function Inicio() {
       clearTimeout(espera);
       control.abort();
     };
-  }, [modo, ubicacion, parametros]);
+    // usuarioId: al entrar o salir se vuelve a pedir, para marcar (o no) tus reacciones.
+  }, [modo, ubicacion, parametros, usuarioId]);
 
   async function verMas() {
     if (!siguiente) return;
     setCargandoMas(true);
     try {
-      const m = await pedir<Muro>(`/muro?${parametros(siguiente)}`);
+      const m = await pedir<Muro>(`/muro?${parametros(siguiente)}`, { conSesion: true });
       setPublicaciones((actuales) => [...(actuales ?? []), ...m.publicaciones]);
       setSiguiente(m.siguiente);
     } finally {

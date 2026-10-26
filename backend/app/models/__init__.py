@@ -6,10 +6,12 @@ from app.models.horario import Horario
 from app.models.enums import EstadoNegocio, RolMiembro, RolPlataforma
 from app.models.negocio import MiembroNegocio, Negocio
 from app.models.publicacion import FotoPublicacion, Publicacion
+from app.models.social import TIPOS_REACCION, Comentario, Reaccion, Seguidor
 from app.models.usuario import CuentaExterna, TokenRefresco, Usuario
 
 __all__ = [
     "Categoria",
+    "Comentario",
     "CuentaExterna",
     "EstadoNegocio",
     "Foto",
@@ -19,8 +21,11 @@ __all__ = [
     "Negocio",
     "Producto",
     "Publicacion",
+    "Reaccion",
     "RolMiembro",
     "RolPlataforma",
+    "Seguidor",
+    "TIPOS_REACCION",
     "TokenRefresco",
     "Usuario",
 ]

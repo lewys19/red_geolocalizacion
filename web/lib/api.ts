@@ -48,7 +48,7 @@ async function refrescar(): Promise<Sesion | null> {
 }
 
 interface Opciones {
-  metodo?: "GET" | "POST" | "PATCH" | "DELETE";
+  metodo?: "GET" | "POST" | "PUT" | "PATCH" | "DELETE";
   cuerpo?: unknown;
   conSesion?: boolean;
   senal?: AbortSignal; // para cancelar una búsqueda que ya no sirve

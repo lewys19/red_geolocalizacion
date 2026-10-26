@@ -11,10 +11,10 @@ from app.core.config import settings
 from app.core.errores import ErrorNegocio
 from app.core.fechas import ahora
 from app.core.geo import coordenadas
-from app.models import Categoria, EstadoNegocio, Foto, Negocio, Producto, Usuario
+from app.models import Categoria, EstadoNegocio, Foto, Negocio, Producto, Publicacion, Usuario
 from app.schemas.catalogo import CatalogoOut, FichaOut, FotoOut, ProductoCambios, ProductoIn, ProductoOut
 from app.schemas.negocio import HorarioOut
-from app.services import imagenes
+from app.services import imagenes, social
 from app.services.horarios import estado_atencion
 from app.services.negocios import exigir_miembro
 
@@ -144,6 +144,14 @@ def ficha(db: Session, almacen: Almacen, slug: str) -> FichaOut:
         fotos=[foto_out(f, almacen) for f in negocio.fotos],
         calificacion_promedio=float(negocio.calificacion_promedio) if negocio.calificacion_promedio else None,
         total_resenas=negocio.total_resenas,
+        logo=almacen.url(negocio.logo_clave) if negocio.logo_clave else None,
+        portada=almacen.url(negocio.portada_clave) if negocio.portada_clave else None,
+        seguidores=social.contar_seguidores(db, negocio.id),
+        total_reacciones=social.total_reacciones_del_negocio(db, negocio.id),
+        total_publicaciones=db.scalar(
+            select(func.count()).select_from(Publicacion).where(Publicacion.negocio_id == negocio.id)
+        )
+        or 0,
     )
 
 
@@ -153,4 +161,11 @@ def catalogo_propio(db: Session, almacen: Almacen, usuario: Usuario, negocio_id:
         select(Producto).where(Producto.negocio_id == negocio_id).order_by(Producto.orden, Producto.id)
     ).all()
     fotos = db.scalars(select(Foto).where(Foto.negocio_id == negocio_id).order_by(Foto.orden, Foto.id)).all()
-    return CatalogoOut(productos=[producto_out(p) for p in productos], fotos=[foto_out(f, almacen) for f in fotos])
+    negocio = db.get(Negocio, negocio_id)
+    assert negocio is not None
+    return CatalogoOut(
+        productos=[producto_out(p) for p in productos],
+        fotos=[foto_out(f, almacen) for f in fotos],
+        logo=almacen.url(negocio.logo_clave) if negocio.logo_clave else None,
+        portada=almacen.url(negocio.portada_clave) if negocio.portada_clave else None,
+    )
