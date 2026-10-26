@@ -58,7 +58,11 @@ export function TarjetaPublicacion({ publicacion: p, ahora }: { publicacion: Pub
       </header>
       {p.texto && <p className="mt-3 whitespace-pre-line text-[15px]">{p.texto}</p>}
       <Mosaico fotos={p.fotos} nombre={p.negocio.nombre} />
-      <AccionesPublicacion publicacion={p} />
+      {/* La clave cambia cuando llegan datos nuevos (p. ej. al iniciar sesión se marca tu reacción). */}
+      <AccionesPublicacion
+        key={`${p.mi_reaccion}-${p.total_reacciones}-${p.total_comentarios}`}
+        publicacion={p}
+      />
     </article>
   );
 }
