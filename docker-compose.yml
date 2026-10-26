@@ -44,6 +44,7 @@ services:
       SECRET_KEY: ${SECRET_KEY:?Falta SECRET_KEY en el archivo .env (mínimo 32 caracteres)}
       CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:3100}
       CARPETA_MEDIA: /app/media
+      UVICORN_WORKERS: ${UVICORN_WORKERS:-1}
       GEOCODING_CONTACTO: ${GEOCODING_CONTACTO:-}
     volumes:
       - altoque-media:/app/media

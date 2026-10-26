@@ -80,3 +80,16 @@ export async function pedir<T>(
   if (!r.ok) throw new ErrorApi(r.status, await mensajeDeError(r));
   return (r.status === 204 ? undefined : await r.json()) as T;
 }
+
+/** Reintenta una lectura si falló la red o el servidor (5xx). Los errores 4xx no se reintentan. */
+export async function conReintentos<T>(leer: () => Promise<T>, intentos = 2, esperaMs = 1200): Promise<T> {
+  for (let i = 1; ; i++) {
+    try {
+      return await leer();
+    } catch (e) {
+      const reintentable = (e instanceof ErrorApi && e.estado >= 500) || e instanceof TypeError;
+      if (!reintentable || i >= intentos) throw e;
+      await new Promise((r) => setTimeout(r, esperaMs));
+    }
+  }
+}

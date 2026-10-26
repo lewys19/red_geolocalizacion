@@ -1,6 +1,9 @@
 import { describe, expect, it } from "vitest";
 
-import { distancia, enlaceComoLlegar, enlaceWhatsapp, hora } from "./formato";
+import { aCentimos } from "@/components/PanelCarta";
+
+import { aPie, distancia, enlaceComoLlegar, enlaceWhatsapp, hora, hoyEnLima, precio } from "./formato";
+import { circulo, limitesDelCirculo } from "./geo";
 
 describe("formato", () => {
   it("acorta la hora", () => expect(hora("23:00:00")).toBe("23:00"));
@@ -14,8 +17,7 @@ describe("formato", () => {
   });
 });
 
-describe("precio y día", async () => {
-  const { precio, hoyEnLima } = await import("./formato");
+describe("precio y día", () => {
   it("muestra soles o consultar", () => {
     expect(precio(1850)).toBe("S/ 18.50");
     expect(precio(0)).toBe("S/ 0.00");
@@ -27,8 +29,7 @@ describe("precio y día", async () => {
   });
 });
 
-describe("precio escrito por el dueño", async () => {
-  const { aCentimos } = await import("@/components/PanelCarta");
+describe("precio escrito por el dueño", () => {
   it("acepta punto, coma y S/", () => {
     expect(aCentimos("18.50")).toBe(1850);
     expect(aCentimos("18,5")).toBe(1850);
@@ -38,5 +39,22 @@ describe("precio escrito por el dueño", async () => {
     expect(aCentimos("  ")).toBeNull();
     expect(aCentimos("diez")).toBeUndefined();
     expect(aCentimos("-3")).toBeUndefined();
+  });
+});
+
+describe("a pie y radio", () => {
+  it("estima el tiempo a pie", () => {
+    expect(aPie(300)).toBe("4 min a pie");
+    expect(aPie(20)).toBe("1 min a pie");
+    expect(aPie(6000)).toBe("1 h 20 min a pie");
+  });
+  it("el círculo queda a la distancia pedida del centro", () => {
+    const [lng, lat] = [-77.03, -12.12];
+    const borde = circulo(lng, lat, 1000)[0]; // el punto al este
+    const metros = (borde[0] - lng) * 111_320 * Math.cos((lat * Math.PI) / 180);
+    expect(Math.round(metros)).toBe(1000);
+    const [[oeste], [este]] = limitesDelCirculo(lng, lat, 1000);
+    expect(oeste).toBeLessThan(lng);
+    expect(este).toBeGreaterThan(lng);
   });
 });

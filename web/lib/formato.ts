@@ -29,3 +29,16 @@ export function hoyEnLima(momento: Date = new Date()): number {
   const nombre = new Intl.DateTimeFormat("en-US", { weekday: "short", timeZone: "America/Lima" }).format(momento);
   return ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"].indexOf(nombre);
 }
+
+/** Tiempo a pie estimado en línea recta (4,5 km/h). Es aproximado: las calles suman algo más. */
+export function aPie(metros: number): string {
+  const minutos = Math.max(1, Math.round(metros / 75));
+  if (minutos < 60) return `${minutos} min a pie`;
+  const h = Math.floor(minutos / 60);
+  const m = minutos % 60;
+  return m ? `${h} h ${m} min a pie` : `${h} h a pie`;
+}
+
+export function coordenadas(lat: number, lng: number): string {
+  return `${lat.toFixed(5)}, ${lng.toFixed(5)}`;
+}

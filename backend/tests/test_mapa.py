@@ -124,3 +124,32 @@ def test_palabras_utiles() -> None:
 
     assert palabras("Pollo a la Brasa en Miraflores") == ["pollo", "brasa", "miraflores"]
     assert palabras("Ñandú, ñandú!!") == ["nandu"]
+
+
+def test_cerca_por_radio_y_del_mas_cercano(client: TestClient, registrar: Callable[..., dict], db: Session) -> None:
+    ana = registrar()
+    # Desde el Parque Kennedy: uno a ~300 m, otro a ~2,5 km (San Isidro), otro a ~8 km (Cercado).
+    _aprobado(client, db, ana, nombre="A 300 m", ubicacion={"lng": -77.0300, "lat": -12.1240})
+    _aprobado(client, db, ana, nombre="A 2,5 km", distrito="San Isidro", ubicacion={"lng": -77.0365, "lat": -12.0990})
+    _aprobado(client, db, ana, nombre="A 8 km", distrito="Lima", ubicacion={"lng": -77.0300, "lat": -12.0464})
+    yo = {"lng": -77.0300, "lat": -12.1215}
+
+    def cerca(radio_m: int, **extra: object) -> list[tuple[str, int]]:
+        r = client.get("/api/v1/mapa/cerca", params={**yo, "radio_m": radio_m, **extra})
+        assert r.status_code == 200, r.text
+        return [(p["nombre"], p["distancia_m"]) for p in r.json()["puntos"]]
+
+    assert [n for n, _ in cerca(1000)] == ["A 300 m"]
+    assert [n for n, _ in cerca(5000)] == ["A 300 m", "A 2,5 km"]
+    assert [n for n, _ in cerca(10000)] == ["A 300 m", "A 2,5 km", "A 8 km"]
+    assert 250 <= cerca(1000)[0][1] <= 350
+    assert cerca(10000, categoria="ferreterias") == []
+
+
+def test_cerca_valida_radio_y_lugar(client: TestClient) -> None:
+    base = {"lng": -77.03, "lat": -12.12}
+    assert client.get("/api/v1/mapa/cerca", params={**base, "radio_m": 60000}).status_code == 422  # > 50 km
+    assert client.get("/api/v1/mapa/cerca", params={**base, "radio_m": 50}).status_code == 422
+    assert client.get("/api/v1/mapa/cerca", params={"radio_m": 5000}).status_code == 422  # sin ubicación
+    fuera = client.get("/api/v1/mapa/cerca", params={"lng": -71.54, "lat": -16.40, "radio_m": 5000})
+    assert fuera.status_code == 400

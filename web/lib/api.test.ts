@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import { ErrorApi, pedir } from "./api";
+import { ErrorApi, conReintentos, pedir } from "./api";
 import { guardarSesion, leerSesion, type Sesion } from "./sesion";
 
 function sesion(acceso: string, refresco: string): Sesion {
@@ -81,5 +81,29 @@ describe("pedir", () => {
     await expect(pedir("/auth/registro", { metodo: "POST", cuerpo: {} })).rejects.toThrow(
       "Ya existe una cuenta con ese email.",
     );
+  });
+});
+
+describe("conReintentos", () => {
+  it("reintenta un error del servidor y devuelve el segundo intento", async () => {
+    let llamadas = 0;
+    const r = await conReintentos(async () => {
+      llamadas++;
+      if (llamadas === 1) throw new ErrorApi(500, "caído");
+      return "ok";
+    }, 2, 1);
+    expect(r).toBe("ok");
+    expect(llamadas).toBe(2);
+  });
+
+  it("no reintenta un error del cliente (4xx)", async () => {
+    let llamadas = 0;
+    await expect(
+      conReintentos(async () => {
+        llamadas++;
+        throw new ErrorApi(422, "datos inválidos");
+      }, 3, 1),
+    ).rejects.toThrow("datos inválidos");
+    expect(llamadas).toBe(1);
   });
 });

@@ -123,3 +123,75 @@ def buscar(
             )
         )
     return MapaOut(total=total, puntos=puntos, grupos=[])
+
+
+def cerca(
+    db: Session,
+    lng: float,
+    lat: float,
+    radio_m: int,
+    categoria: str | None = None,
+    texto: str | None = None,
+    momento: datetime | None = None,
+) -> MapaOut:
+    """Negocios dentro de un radio alrededor de quien busca, del más cercano al más lejano.
+
+    ST_DWithin sobre geography mide en metros reales y usa el índice espacial (GIST).
+    Con texto, primero los que más se parecen y, a igual parecido, los más cercanos.
+    """
+    origen = cast(func.ST_SetSRID(func.ST_MakePoint(lng, lat), 4326), Geography(srid=4326))
+    distancia = func.ST_Distance(Negocio.ubicacion, origen)
+    buscadas = palabras(texto) if texto else []
+    relevancia = puntaje(buscadas) if buscadas else None
+
+    def filtrar(consulta: Select) -> Select:
+        consulta = consulta.where(
+            Negocio.estado == EstadoNegocio.APROBADO,
+            Negocio.eliminado_en.is_(None),
+            func.ST_DWithin(Negocio.ubicacion, origen, radio_m),
+        )
+        if categoria:
+            padre = select(Categoria.id).where(Categoria.slug == categoria).scalar_subquery()
+            ids = select(Categoria.id).where(or_(Categoria.slug == categoria, Categoria.padre_id == padre))
+            consulta = consulta.where(Negocio.categoria_id.in_(ids))
+        return consulta.where(relevancia > 0) if relevancia is not None else consulta
+
+    total = db.scalar(filtrar(select(func.count()).select_from(Negocio))) or 0
+    if total == 0:
+        return MapaOut(total=0, puntos=[], grupos=[])
+
+    geom = cast(Negocio.ubicacion, Geometry(srid=4326))
+    orden = [distancia] if relevancia is None else [relevancia.desc(), distancia]
+    consulta = (
+        filtrar(
+            select(Negocio, func.ST_X(geom), func.ST_Y(geom), Categoria.nombre, distancia)
+            .join(Categoria, Categoria.id == Negocio.categoria_id)
+            .options(selectinload(Negocio.horarios))
+        )
+        .order_by(*orden)
+        .limit(settings.LIMITE_CERCANOS)
+    )
+    momento = momento or ahora()
+    puntos = []
+    for negocio, x, y, nombre_categoria, metros in db.execute(consulta).all():
+        atencion = estado_atencion(negocio.horarios, momento)
+        puntos.append(
+            PuntoMapa(
+                id=negocio.id,
+                slug=negocio.slug,
+                nombre=negocio.nombre,
+                categoria=nombre_categoria,
+                lng=x,
+                lat=y,
+                distrito=negocio.distrito,
+                direccion=negocio.direccion,
+                referencia=negocio.referencia,
+                telefono=negocio.telefono,
+                whatsapp=negocio.whatsapp,
+                tiene_delivery=negocio.tiene_delivery,
+                abierto=atencion.abierto if atencion else None,
+                cierra_a=atencion.cierra_a if atencion else None,
+                distancia_m=round(metros),
+            )
+        )
+    return MapaOut(total=total, puntos=puntos, grupos=[])

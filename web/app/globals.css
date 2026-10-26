@@ -40,7 +40,8 @@
   --color-marca-suave: var(--marca-suave);
   --color-sobre-marca: var(--sobre-marca);
   --color-error: var(--error);
-  --font-sans: var(--font-geist-sans);
+  /* Fuente del sistema: no se descarga nada (ni al compilar ni al abrir la página). */
+  --font-sans: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
 }
 
 body {
@@ -61,4 +62,10 @@ summary {
 .maplibregl-ctrl-bottom-left {
   margin-bottom: var(--alto-panel, 0px);
   transition: margin-bottom 150ms ease;
+}
+
+/* Mapa alejado con muchos negocios: solo el punto; la etiqueta aparece al pasar el mouse. */
+.sin-etiquetas .marcador-negocio:not(:hover) .etiqueta-negocio,
+.marcador-negocio.etiqueta-tapada:not(:hover) .etiqueta-negocio {
+  display: none;
 }

@@ -31,6 +31,9 @@ class Settings(BaseSettings):
     LIMITE_PUNTOS_MAPA: int = 150
     # Recuadro máximo que se puede pedir (en grados, ~110 km por grado): evita consultas de todo el país.
     MAX_LADO_RECUADRO: float = 1.0
+    # Búsqueda por radio alrededor de quien busca: máximo 50 km; se devuelven los más cercanos.
+    MAX_RADIO_M: int = 50_000
+    LIMITE_CERCANOS: int = 100
     MAX_PENDIENTES_POR_USUARIO: int = 5
 
     # Geocodificación (dirección ↔ coordenadas). "nominatim" (OpenStreetMap, gratis) o "ninguno".
