@@ -31,7 +31,9 @@ URL_PRUEBAS = make_url(os.environ.get("DATABASE_URL_PRUEBAS") or settings.DATABA
     database="altoque_pruebas"
 )
 # Tablas que se vacían entre pruebas (las categorías vienen de la migración y se conservan).
-TABLAS_DE_DATOS = "fotos, productos, horarios, miembros_negocio, negocios, tokens_refresco, usuarios"
+TABLAS_DE_DATOS = (
+    "fotos_publicacion, publicaciones, fotos, productos, horarios, miembros_negocio, negocios, tokens_refresco, usuarios"
+)
 
 
 def _crear_base_si_falta() -> None:
