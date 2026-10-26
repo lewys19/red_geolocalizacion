@@ -42,3 +42,17 @@ export function aPie(metros: number): string {
 export function coordenadas(lat: number, lng: number): string {
   return `${lat.toFixed(5)}, ${lng.toFixed(5)}`;
 }
+
+/** "hace 5 min", "hace 3 h", "ayer", "hace 4 días" o la fecha. */
+export function hace(fechaIso: string, ahora: Date = new Date()): string {
+  const segundos = Math.max(0, (ahora.getTime() - new Date(fechaIso).getTime()) / 1000);
+  if (segundos < 60) return "ahora";
+  if (segundos < 3600) return `hace ${Math.floor(segundos / 60)} min`;
+  if (segundos < 86400) return `hace ${Math.floor(segundos / 3600)} h`;
+  const dias = Math.floor(segundos / 86400);
+  if (dias === 1) return "ayer";
+  if (dias < 7) return `hace ${dias} días`;
+  return new Intl.DateTimeFormat("es-PE", { day: "numeric", month: "short", timeZone: "America/Lima" }).format(
+    new Date(fechaIso),
+  );
+}

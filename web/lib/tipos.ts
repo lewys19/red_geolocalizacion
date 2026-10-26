@@ -114,3 +114,27 @@ export interface Catalogo {
   productos: Producto[];
   fotos: Foto[];
 }
+
+/** Un negocio en pocas palabras: círculos del Inicio, tarjetas y cabecera de publicación. */
+export interface NegocioMini {
+  id: number;
+  slug: string;
+  nombre: string;
+  categoria: string;
+  distrito: string;
+  foto: string | null;
+  distancia_m: number | null;
+}
+
+export interface Publicacion {
+  id: number;
+  texto: string;
+  creado_en: string;
+  negocio: NegocioMini;
+  fotos: Foto[];
+}
+
+export interface Muro {
+  publicaciones: Publicacion[];
+  siguiente: number | null;
+}

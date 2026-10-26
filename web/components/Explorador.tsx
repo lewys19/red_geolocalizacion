@@ -7,6 +7,7 @@ import { type CSSProperties, useCallback, useEffect, useState } from "react";
 import { conReintentos, pedir } from "@/lib/api";
 import { aPie, distancia, hora } from "@/lib/formato";
 import type { PuntoMapa, RespuestaMapa } from "@/lib/tipos";
+import { guardarUbicacion, pedirGps, useUbicacion } from "@/lib/ubicacion";
 
 import { Buscador } from "./Buscador";
 import { Mapa } from "./Mapa";
@@ -16,33 +17,28 @@ const RADIOS_KM = [1, 2, 5, 10, 20, 50];
 
 type EstadoGps = "inactivo" | "buscando" | "no-disponible";
 
-/** Pantalla principal: primero tu ubicación, luego el radio; los negocios más cercanos primero. */
-export function Explorador() {
+/** Pestaña Mapa: primero tu ubicación, luego el radio; los negocios más cercanos primero. */
+export function Explorador({
+  textoInicial = "",
+  categoriaInicial = null,
+}: {
+  textoInicial?: string;
+  categoriaInicial?: string | null;
+}) {
   const router = useRouter();
-  const [ubicacion, setUbicacion] = useState<[number, number] | null>(null);
+  const ubicacion = useUbicacion(); // compartida con Inicio y Categorías
+  const setUbicacion = guardarUbicacion;
   const [radioKm, setRadioKm] = useState(5);
-  const [categoria, setCategoria] = useState<string | null>(null);
-  const [texto, setTexto] = useState("");
+  const [categoria, setCategoria] = useState<string | null>(categoriaInicial);
+  const [texto, setTexto] = useState(textoInicial);
   const [resultado, setResultado] = useState<RespuestaMapa | null>(null);
   const [gps, setGps] = useState<EstadoGps>("inactivo");
   const [aviso, setAviso] = useState<string | null>(null);
   const [intento, setIntento] = useState(0); // al pulsar «Reintentar» se vuelve a buscar
 
-  function usarMiUbicacion() {
-    // Los navegadores solo dan el GPS en sitios seguros (https o localhost).
-    if (!window.isSecureContext || !navigator.geolocation) {
-      setGps("no-disponible");
-      return;
-    }
+  async function usarMiUbicacion() {
     setGps("buscando");
-    navigator.geolocation.getCurrentPosition(
-      ({ coords }) => {
-        setUbicacion([coords.longitude, coords.latitude]);
-        setGps("inactivo");
-      },
-      () => setGps("no-disponible"),
-      { enableHighAccuracy: true, timeout: 10000 },
-    );
+    setGps((await pedirGps()) === "ok" ? "inactivo" : "no-disponible");
   }
 
   // Busca los cercanos cada vez que cambia la ubicación, el radio, la categoría o el texto.
@@ -79,7 +75,7 @@ export function Explorador() {
   return (
     <section className="relative flex-1" style={estilo}>
       <Mapa ubicacion={ubicacion} radio={radioKm * 1000} puntos={puntos} alMarcarUbicacion={setUbicacion} alAbrir={abrir} />
-      <Buscador alBuscar={buscar} elegida={categoria} alCambiar={setCategoria} />
+      <Buscador alBuscar={buscar} elegida={categoria} alCambiar={setCategoria} textoInicial={textoInicial} />
 
       <div className="pointer-events-none absolute inset-x-0 bottom-0 z-10 p-3">
         <div className="pointer-events-auto mx-auto max-w-xl rounded-2xl border border-borde bg-superficie p-4 shadow-lg">

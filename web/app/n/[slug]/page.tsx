@@ -3,9 +3,10 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 
 import { MiniMapa } from "@/components/MiniMapa";
+import { TarjetaPublicacion } from "@/components/TarjetaPublicacion";
 import { DIAS, enlaceComoLlegar, enlaceWhatsapp, hora, hoyEnLima, precio } from "@/lib/formato";
 import { obtener } from "@/lib/servidor";
-import type { Ficha } from "@/lib/tipos";
+import type { Ficha, Muro } from "@/lib/tipos";
 
 type Props = { params: Promise<{ slug: string }> };
 
@@ -28,11 +29,12 @@ export default async function PaginaNegocio({ params }: Props) {
   const { slug } = await params;
   const f = await obtener<Ficha>(`/negocios/ficha/${encodeURIComponent(slug)}`);
   if (!f) notFound();
+  const muro = await obtener<Muro>(`/negocios/ficha/${encodeURIComponent(slug)}/publicaciones`);
   const hoy = hoyEnLima();
 
   return (
     <article className="mx-auto w-full max-w-2xl px-4 pb-10 pt-4">
-      <Link href="/" className="text-sm text-texto-2 hover:text-texto">
+      <Link href="/mapa" className="text-sm text-texto-2 hover:text-texto">
         ← Volver al mapa
       </Link>
 
@@ -142,6 +144,15 @@ export default async function PaginaNegocio({ params }: Props) {
         </p>
         <MiniMapa lng={f.lng} lat={f.lat} nombre={f.nombre} />
       </section>
+
+      {muro && muro.publicaciones.length > 0 && (
+        <section className="mt-8 space-y-4">
+          <h2 className="text-lg font-bold">Publicaciones</h2>
+          {muro.publicaciones.map((p) => (
+            <TarjetaPublicacion key={p.id} publicacion={p} />
+          ))}
+        </section>
+      )}
     </article>
   );
 }

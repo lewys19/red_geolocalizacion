@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import { aCentimos } from "@/components/PanelCarta";
 
-import { aPie, distancia, enlaceComoLlegar, enlaceWhatsapp, hora, hoyEnLima, precio } from "./formato";
+import { aPie, distancia, enlaceComoLlegar, enlaceWhatsapp, hace, hora, hoyEnLima, precio } from "./formato";
 import { circulo, limitesDelCirculo } from "./geo";
 
 describe("formato", () => {
@@ -56,5 +56,16 @@ describe("a pie y radio", () => {
     const [[oeste], [este]] = limitesDelCirculo(lng, lat, 1000);
     expect(oeste).toBeLessThan(lng);
     expect(este).toBeGreaterThan(lng);
+  });
+});
+
+describe("hace", () => {
+  const ahora = new Date("2026-10-26T15:00:00Z");
+  it("dice cuánto pasó", () => {
+    expect(hace("2026-10-26T14:59:30Z", ahora)).toBe("ahora");
+    expect(hace("2026-10-26T14:55:00Z", ahora)).toBe("hace 5 min");
+    expect(hace("2026-10-26T12:00:00Z", ahora)).toBe("hace 3 h");
+    expect(hace("2026-10-25T12:00:00Z", ahora)).toBe("ayer");
+    expect(hace("2026-10-22T12:00:00Z", ahora)).toBe("hace 4 días");
   });
 });

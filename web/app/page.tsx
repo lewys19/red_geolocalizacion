@@ -1,5 +1,5 @@
-import { Explorador } from "@/components/Explorador";
+import { Inicio } from "@/components/Inicio";
 
-export default function Inicio() {
-  return <Explorador />;
+export default function PaginaInicio() {
+  return <Inicio />;
 }

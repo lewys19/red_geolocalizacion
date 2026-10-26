@@ -14,11 +14,12 @@ interface PropsBuscador {
   elegida: string | null;
   alCambiar: (slug: string | null) => void;
   alBuscar: (texto: string) => void;
+  textoInicial?: string; // lo que se escribió en el buscador de la barra superior
 }
 
-export function Buscador({ elegida, alCambiar, alBuscar }: PropsBuscador) {
+export function Buscador({ elegida, alCambiar, alBuscar, textoInicial = "" }: PropsBuscador) {
   const [categorias, setCategorias] = useState<Categoria[]>([]);
-  const [texto, setTexto] = useState("");
+  const [texto, setTexto] = useState(textoInicial);
 
   // Busca solo cuando la persona deja de escribir (400 ms).
   useEffect(() => {
