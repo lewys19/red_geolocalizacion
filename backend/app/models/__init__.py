@@ -6,10 +6,11 @@ from app.models.horario import Horario
 from app.models.enums import EstadoNegocio, RolMiembro, RolPlataforma
 from app.models.negocio import MiembroNegocio, Negocio
 from app.models.publicacion import FotoPublicacion, Publicacion
-from app.models.usuario import TokenRefresco, Usuario
+from app.models.usuario import CuentaExterna, TokenRefresco, Usuario
 
 __all__ = [
     "Categoria",
+    "CuentaExterna",
     "EstadoNegocio",
     "Foto",
     "FotoPublicacion",

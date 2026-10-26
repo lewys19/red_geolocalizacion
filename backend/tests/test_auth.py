@@ -35,7 +35,7 @@ def test_email_duplicado_sin_importar_mayusculas(client: TestClient, registrar: 
 
 def test_login_correcto_e_incorrecto(client: TestClient, registrar: Callable[..., dict]) -> None:
     registrar()
-    ok = client.post("/api/v1/auth/login", json={"email": "ana@example.com", "contrasena": "clave-segura-1"})
+    ok = client.post("/api/v1/auth/login", json={"usuario": "ana@example.com", "contrasena": "clave-segura-1"})
     assert ok.status_code == 200
     mal = client.post("/api/v1/auth/login", json={"email": "ana@example.com", "contrasena": "otra-clave-x"})
     nadie = client.post("/api/v1/auth/login", json={"email": "nadie@example.com", "contrasena": "clave-segura-1"})
@@ -80,7 +80,7 @@ def test_eliminar_cuenta_anonimiza_y_libera_el_email(client: TestClient, registr
     sesion = registrar()
     assert client.delete("/api/v1/yo", headers=cabeceras(sesion)).status_code == 204
     assert client.get("/api/v1/yo", headers=cabeceras(sesion)).status_code == 401
-    r = client.post("/api/v1/auth/login", json={"email": "ana@example.com", "contrasena": "clave-segura-1"})
+    r = client.post("/api/v1/auth/login", json={"usuario": "ana@example.com", "contrasena": "clave-segura-1"})
     assert r.status_code == 401
     # El email queda libre para una cuenta nueva.
     registrar("ana@example.com")

@@ -26,6 +26,15 @@ class Settings(BaseSettings):
 
     ZONA_HORARIA: str = "America/Lima"
 
+    # Dirección pública de la web (sin / al final). Google y Microsoft vuelven a
+    # {URL_PUBLICA}/api/v1/auth/externo/{proveedor}/vuelta: esa URL se registra en sus consolas.
+    URL_PUBLICA: str = "http://localhost:3100"
+    # Ingreso con Google y con Microsoft (Hotmail, Outlook). Vacíos = botón desactivado.
+    GOOGLE_CLIENT_ID: str = ""
+    GOOGLE_CLIENT_SECRET: str = ""
+    MICROSOFT_CLIENT_ID: str = ""
+    MICROSOFT_CLIENT_SECRET: str = ""
+
     # Mapa: hasta este número de negocios en pantalla se muestran uno por uno;
     # con más, se agrupan en burbujas con el conteo.
     LIMITE_PUNTOS_MAPA: int = 150

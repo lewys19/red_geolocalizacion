@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
 import { Tarjeta } from "@/components/Formulario";
+import { BotonAcceso } from "@/components/VentanaAcceso";
 import { pedir } from "@/lib/api";
 import { guardarSesion, leerSesion } from "@/lib/sesion";
 import type { EstadoNegocio, Negocio } from "@/lib/tipos";
@@ -66,9 +67,7 @@ export default function Cuenta() {
     return (
       <Tarjeta titulo="Tu cuenta">
         <p className="text-center text-texto-2">
-          <Link href="/ingresar" className="font-medium text-marca-fuerte underline">
-            Ingresa
-          </Link>{" "}
+          <BotonAcceso>Ingresa</BotonAcceso>{" "}
           para ver tu cuenta.
         </p>
       </Tarjeta>

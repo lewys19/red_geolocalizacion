@@ -19,7 +19,7 @@ from app.core.security import (
     verificar_contrasena,
 )
 from app.models import TokenRefresco, Usuario
-from app.schemas.auth import LoginIn, RegistroIn, SesionOut
+from app.schemas.auth import LoginIn, RegistroIn, SesionOut, normalizar_celular
 from app.schemas.usuario import UsuarioOut
 
 
@@ -27,7 +27,7 @@ def _normalizar(email: str) -> str:
     return email.strip().lower()
 
 
-def _abrir_sesion(db: Session, usuario: Usuario) -> SesionOut:
+def abrir_sesion(db: Session, usuario: Usuario) -> SesionOut:
     acceso, expira = crear_token_acceso(usuario.id)
     valor, huella_refresco = nuevo_token_refresco()
     db.add(
@@ -50,27 +50,39 @@ def registrar(db: Session, datos: RegistroIn) -> SesionOut:
     usuario = Usuario(
         email=_normalizar(datos.email),
         nombre=datos.nombre,
+        telefono=datos.celular,
         hash_contrasena=hash_contrasena(datos.contrasena),
         acepto_terminos_en=ahora(),
     )
     db.add(usuario)
     try:
         db.flush()
-    except IntegrityError:
+    except IntegrityError as error:
         db.rollback()
-        raise ErrorNegocio(status.HTTP_409_CONFLICT, "Ya existe una cuenta con ese email.") from None
-    return _abrir_sesion(db, usuario)
+        repetido = "celular" if "telefono" in str(error.orig) else "email"
+        raise ErrorNegocio(status.HTTP_409_CONFLICT, f"Ya existe una cuenta con ese {repetido}.") from None
+    return abrir_sesion(db, usuario)
+
+
+def _buscar_cuenta(db: Session, valor: str) -> Usuario | None:
+    """Por correo si tiene @; si no, por celular."""
+    if "@" in valor:
+        condicion = Usuario.email == _normalizar(valor)
+    else:
+        celular = normalizar_celular(valor)
+        if celular is None:
+            return None
+        condicion = Usuario.telefono == celular
+    return db.scalar(select(Usuario).where(condicion, Usuario.eliminado_en.is_(None)))
 
 
 def ingresar(db: Session, datos: LoginIn) -> SesionOut:
-    usuario = db.scalar(
-        select(Usuario).where(Usuario.email == _normalizar(datos.email), Usuario.eliminado_en.is_(None))
-    )
-    # Siempre se verifica un hash, exista o no el email: así el tiempo no delata qué cuentas existen.
+    usuario = _buscar_cuenta(db, datos.usuario)
+    # Siempre se verifica un hash, exista o no la cuenta: así el tiempo no delata qué cuentas existen.
     valida = verificar_contrasena(datos.contrasena, usuario.hash_contrasena if usuario else HASH_SEÑUELO)
     if usuario is None or not valida:
-        raise ErrorNegocio(status.HTTP_401_UNAUTHORIZED, "Email o contraseña incorrectos.")
-    return _abrir_sesion(db, usuario)
+        raise ErrorNegocio(status.HTTP_401_UNAUTHORIZED, "Correo, celular o contraseña incorrectos.")
+    return abrir_sesion(db, usuario)
 
 
 def refrescar(db: Session, valor: str) -> SesionOut:
@@ -88,7 +100,7 @@ def refrescar(db: Session, valor: str) -> SesionOut:
     if usuario is None or usuario.eliminado_en is not None:
         raise ErrorNegocio(status.HTTP_401_UNAUTHORIZED, "La sesión venció. Vuelve a ingresar.")
     token.revocado_en = momento
-    return _abrir_sesion(db, usuario)
+    return abrir_sesion(db, usuario)
 
 
 def salir(db: Session, valor: str) -> None:

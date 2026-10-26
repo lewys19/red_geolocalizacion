@@ -69,3 +69,26 @@ summary {
 .marcador-negocio.etiqueta-tapada:not(:hover) .etiqueta-negocio {
   display: none;
 }
+
+/* Ventana de ingreso: el fondo se oscurece y se desenfoca un poco; la página no se desplaza detrás. */
+.ventana-acceso::backdrop {
+  background: rgb(12 10 9 / 0.55);
+  backdrop-filter: blur(3px);
+}
+.ventana-acceso[open] {
+  animation: aparecer-ventana 180ms ease-out;
+}
+html:has(.ventana-acceso[open]) {
+  overflow: hidden;
+}
+@keyframes aparecer-ventana {
+  from {
+    opacity: 0;
+    transform: translateY(12px) scale(0.98);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ventana-acceso[open] {
+    animation: none;
+  }
+}

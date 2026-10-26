@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { type FormEvent, type ReactNode, Suspense, useState } from "react";
 
+import { abrirAcceso } from "@/lib/acceso";
 import { useSesion } from "@/lib/usarSesion";
 
 import { Logo } from "./Logo";
@@ -135,12 +136,21 @@ export function Encabezado() {
           </>
         ) : (
           <>
-            <Link href="/ingresar" className="hidden px-2 py-1.5 text-texto-2 hover:text-texto sm:block">
+            {/* Abren la ventana flotante: no se sale de la página. */}
+            <button
+              type="button"
+              onClick={() => abrirAcceso("ingresar")}
+              className="rounded-full border-[1.5px] border-texto-2/60 px-4 py-1.5 font-semibold text-texto transition hover:border-marca hover:text-marca-fuerte"
+            >
               Ingresar
-            </Link>
-            <Link href="/registro" className="rounded-full bg-marca px-3 py-1.5 font-medium text-sobre-marca hover:bg-marca-fuerte">
+            </button>
+            <button
+              type="button"
+              onClick={() => abrirAcceso("registro")}
+              className="hidden rounded-full border-[1.5px] border-marca bg-marca px-4 py-1.5 font-semibold text-sobre-marca transition hover:bg-marca-fuerte sm:block"
+            >
               Crear cuenta
-            </Link>
+            </button>
           </>
         )}
       </div>

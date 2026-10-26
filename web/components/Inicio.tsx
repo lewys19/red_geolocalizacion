@@ -3,9 +3,11 @@
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 
+import { abrirAcceso } from "@/lib/acceso";
 import { conReintentos, pedir } from "@/lib/api";
 import type { Muro, NegocioMini, Publicacion } from "@/lib/tipos";
 import { pedirGps, useUbicacion } from "@/lib/ubicacion";
+import { useSesion } from "@/lib/usarSesion";
 
 import { Avatar, TarjetaPublicacion } from "./TarjetaPublicacion";
 
@@ -33,6 +35,7 @@ function PanelIzquierdo({
   alCambiarRadio: (km: number) => void;
 }) {
   const ubicacion = useUbicacion();
+  const sesion = useSesion();
   const [sinGps, setSinGps] = useState(false);
 
   async function elegirRadio() {
@@ -88,8 +91,14 @@ function PanelIzquierdo({
         </Caja>
       </div>
 
+      {/* Sin sesión, primero la ventana de ingreso (sin salir del Inicio). */}
       <Link
         href="/publicar"
+        onClick={(e) => {
+          if (sesion) return;
+          e.preventDefault();
+          abrirAcceso("ingresar", "Ingresa con la cuenta de tu negocio para publicar.");
+        }}
         className="block rounded-2xl bg-[#1e2a4a] px-4 py-3 text-center font-semibold text-white shadow hover:brightness-110 dark:bg-marca dark:text-sobre-marca"
       >
         Crear publicación

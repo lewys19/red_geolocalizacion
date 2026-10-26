@@ -6,6 +6,7 @@ import { type FormEvent, use, useEffect, useState } from "react";
 import { CamposDatos, CamposUbicacion, type DatosNegocio, aCuerpo } from "@/components/CamposNegocio";
 import { EditorHorario, type HorarioSemana, aHorarios, deHorarios } from "@/components/EditorHorario";
 import { Boton, MensajeError, Tarjeta } from "@/components/Formulario";
+import { BotonAcceso } from "@/components/VentanaAcceso";
 import { PanelCarta } from "@/components/PanelCarta";
 import { PanelFotos } from "@/components/PanelFotos";
 import { ErrorApi, pedir } from "@/lib/api";
@@ -62,9 +63,13 @@ export default function PanelNegocio({ params }: { params: Promise<{ id: string 
       <Tarjeta titulo="Mi negocio">
         <p className="text-center text-texto-2">
           {sesion ? "No encontramos este negocio en tu cuenta." : "Ingresa para administrar tu negocio."}{" "}
-          <Link href={sesion ? "/cuenta" : "/ingresar"} className="font-medium text-marca-fuerte underline">
-            {sesion ? "Ver mis negocios" : "Ingresar"}
-          </Link>
+          {sesion ? (
+            <Link href="/cuenta" className="font-medium text-marca-fuerte underline">
+              Ver mis negocios
+            </Link>
+          ) : (
+            <BotonAcceso>Ingresar</BotonAcceso>
+          )}
         </p>
       </Tarjeta>
     );

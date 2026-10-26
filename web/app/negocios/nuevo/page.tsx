@@ -6,6 +6,7 @@ import { type FormEvent, useState } from "react";
 import { CamposDatos, CamposUbicacion, DATOS_VACIOS, type DatosNegocio, aCuerpo } from "@/components/CamposNegocio";
 import { EditorHorario, type HorarioSemana, SEMANA_VACIA, aHorarios } from "@/components/EditorHorario";
 import { Boton, MensajeError, Tarjeta } from "@/components/Formulario";
+import { BotonAcceso } from "@/components/VentanaAcceso";
 import { ErrorApi, pedir } from "@/lib/api";
 import { LIMA } from "@/lib/mapaBase";
 import type { Negocio } from "@/lib/tipos";
@@ -29,13 +30,7 @@ export default function NuevoNegocio() {
       <Tarjeta titulo="Registra tu negocio">
         <p className="text-center text-texto-2">
           Primero{" "}
-          <Link href="/registro" className="font-medium text-marca-fuerte underline">
-            crea tu cuenta
-          </Link>{" "}
-          o{" "}
-          <Link href="/ingresar" className="font-medium text-marca-fuerte underline">
-            ingresa
-          </Link>
+          <BotonAcceso vista="registro">crea tu cuenta</BotonAcceso> o <BotonAcceso>ingresa</BotonAcceso>
           . Es gratis.
         </p>
       </Tarjeta>

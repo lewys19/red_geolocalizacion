@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { type FormEvent, useEffect, useMemo, useState } from "react";
 
 import { Boton, MensajeError, Tarjeta } from "@/components/Formulario";
+import { BotonAcceso } from "@/components/VentanaAcceso";
 import { ErrorApi, pedir } from "@/lib/api";
 import type { Negocio } from "@/lib/tipos";
 import { useSesion } from "@/lib/usarSesion";
@@ -42,9 +43,7 @@ export default function Publicar() {
     return (
       <Tarjeta titulo="Crear publicación">
         <p className="text-center text-texto-2">
-          <Link href="/ingresar" className="font-medium text-marca-fuerte underline">
-            Ingresa
-          </Link>{" "}
+          <BotonAcceso>Ingresa</BotonAcceso>{" "}
           con la cuenta de tu negocio para publicar.
         </p>
       </Tarjeta>
