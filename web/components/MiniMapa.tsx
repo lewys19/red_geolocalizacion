@@ -11,18 +11,31 @@ export function MiniMapa({ lng, lat, nombre }: { lng: number; lat: number; nombr
   const contenedor = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    if (!contenedor.current) return;
-    const mapa = new MapaLibre({
-      container: contenedor.current,
-      style: ESTILO,
-      center: [lng, lat],
-      zoom: 16,
-      interactive: false,
-      locale: TEXTOS_MAPA,
+    const div = contenedor.current;
+    if (!div) return;
+    let mapa: MapaLibre | null = null;
+    // Se crea recién cuando se ve (p. ej. al abrir la pestaña Información): un mapa oculto
+    // gasta memoria y procesador del celular para nada.
+    const observador = new IntersectionObserver(([entrada]) => {
+      if (!entrada.isIntersecting || mapa) return;
+      mapa = new MapaLibre({
+        container: div,
+        style: ESTILO,
+        center: [lng, lat],
+        zoom: 16,
+        interactive: false,
+        locale: TEXTOS_MAPA,
+      });
+      const listo = mapa;
+      listo.on("load", () => nombresEnEspanol(listo));
+      new Marker({ color: "#ea580c" }).setLngLat([lng, lat]).addTo(listo);
+      observador.disconnect();
     });
-    mapa.on("load", () => nombresEnEspanol(mapa));
-    new Marker({ color: "#ea580c" }).setLngLat([lng, lat]).addTo(mapa);
-    return () => mapa.remove();
+    observador.observe(div);
+    return () => {
+      observador.disconnect();
+      mapa?.remove();
+    };
   }, [lng, lat]);
 
   return (
