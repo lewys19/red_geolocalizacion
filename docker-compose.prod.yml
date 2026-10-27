@@ -1,0 +1,85 @@
+# Altoque en el servidor: usa las imágenes que GitHub Actions sube a GHCR (no necesita el código).
+# En el VPS solo hacen falta este archivo y el .env (escrito a mano, chmod 600; ver .env.prod.example).
+# Los puertos 80/443 los atiende el proxy compartido (despliegue/proxy), que llega a la web por la red "proxy".
+#   1. docker login ghcr.io   (con un token classic de solo lectura de paquetes)
+#   2. docker compose pull
+#   3. docker compose up -d
+# Para volver a una versión anterior: VERSION=<hash del commit> en el .env y repetir 2 y 3.
+services:
+  db:
+    image: postgis/postgis:17-3.5-alpine
+    container_name: altoque-db
+    environment:
+      POSTGRES_DB: altoque
+      POSTGRES_USER: altoque
+      POSTGRES_PASSWORD: ${DB_PASSWORD:?Falta DB_PASSWORD en el archivo .env}
+    volumes:
+      - altoque-db:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U altoque -d altoque"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+
+  redis:
+    image: redis:7.4-alpine
+    container_name: altoque-redis
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    restart: unless-stopped
+
+  api:
+    image: ghcr.io/lewys19/altoque-api:${VERSION:-latest}
+    container_name: altoque-api
+    environment:
+      DATABASE_URL: postgresql+psycopg://altoque:${DB_PASSWORD}@db:5432/altoque
+      REDIS_URL: redis://redis:6379/0
+      SECRET_KEY: ${SECRET_KEY:?Falta SECRET_KEY en el archivo .env (mínimo 32 caracteres)}
+      CORS_ORIGINS: ${URL_PUBLICA:?Falta URL_PUBLICA en el archivo .env (por ejemplo https://altoque.zcorp23.com)}
+      CARPETA_MEDIA: /app/media
+      UVICORN_WORKERS: ${UVICORN_WORKERS:-2}
+      GEOCODING_CONTACTO: ${GEOCODING_CONTACTO:-}
+      URL_PUBLICA: ${URL_PUBLICA}
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-}
+      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-}
+      MICROSOFT_CLIENT_ID: ${MICROSOFT_CLIENT_ID:-}
+      MICROSOFT_CLIENT_SECRET: ${MICROSOFT_CLIENT_SECRET:-}
+    volumes:
+      - altoque-media:/app/media
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
+      interval: 10s
+      timeout: 5s
+      retries: 6
+      start_period: 20s
+    restart: unless-stopped
+
+  web:
+    image: ghcr.io/lewys19/altoque-web:${VERSION:-latest}
+    container_name: altoque-web
+    # La imagen ya trae API_INTERNA=http://api:8000 (fijada al compilar).
+    networks:
+      - default
+      - proxy
+    depends_on:
+      api:
+        condition: service_healthy
+    restart: unless-stopped
+
+networks:
+  # La crea el proxy compartido (despliegue/proxy). Si falta: docker network create proxy
+  proxy:
+    external: true
+
+volumes:
+  altoque-db:
+  altoque-media:

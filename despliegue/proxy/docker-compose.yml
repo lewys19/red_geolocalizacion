@@ -1,0 +1,30 @@
+# Proxy compartido del VPS: el único que escucha en 80/443 y reparte por dominio.
+# Saca el HTTPS solo (Let's Encrypt) para cada dominio del Caddyfile.
+# Cada aplicación (Altoque, Avanza) se une a la red "proxy" con el contenedor que atiende la web.
+# En el VPS va en ~/proxy junto al Caddyfile:
+#   docker network create proxy     (una sola vez)
+#   docker compose up -d
+# Tras editar el Caddyfile: docker compose exec caddy caddy reload --config /etc/caddy/Caddyfile
+services:
+  caddy:
+    image: caddy:2.8-alpine
+    container_name: proxy-caddy
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - proxy-datos:/data
+      - proxy-config:/config
+    networks:
+      - proxy
+    restart: unless-stopped
+
+networks:
+  proxy:
+    external: true
+
+volumes:
+  proxy-datos:
+  proxy-config:

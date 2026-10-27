@@ -73,18 +73,46 @@ jobs:
       - run: npm run build
 
   imagenes:
+    # Construye las imágenes en cada push (un Dockerfile roto se detecta en la rama),
+    # pero solo las sube a GHCR cuando el push es a main (producción).
     name: Imagen Docker (${{ matrix.servicio }})
     needs: [backend, web]
+    if: github.event_name != 'pull_request'
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
     strategy:
       matrix:
-        servicio: [backend, web]
+        include:
+          - servicio: api
+            carpeta: backend
+          - servicio: web
+            carpeta: web
+    env:
+      SUBIR: ${{ github.ref == 'refs/heads/main' }}
     steps:
       - uses: actions/checkout@v5
       - uses: docker/setup-buildx-action@v3
+      - if: env.SUBIR == 'true'
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      # Etiquetas: "latest" (lo que descarga el VPS) y el hash del commit (para volver a una versión anterior).
+      - id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ghcr.io/${{ github.repository_owner }}/altoque-${{ matrix.servicio }}
+          tags: |
+            type=raw,value=latest,enable=${{ env.SUBIR }}
+            type=sha,format=long,prefix=
       - uses: docker/build-push-action@v6
         with:
-          context: ${{ matrix.servicio }}
-          push: false
-          cache-from: type=gha,scope=${{ matrix.servicio }}
-          cache-to: type=gha,mode=max,scope=${{ matrix.servicio }}
+          context: ${{ matrix.carpeta }}
+          push: ${{ env.SUBIR == 'true' }}
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha,scope=${{ matrix.carpeta }}
+          cache-to: type=gha,mode=max,scope=${{ matrix.carpeta }}

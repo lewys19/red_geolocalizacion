@@ -1,0 +1,16 @@
+# Un bloque por dominio: el proxy pide el certificado y reenvía al contenedor por la red "proxy".
+
+altoque.zcorp23.com {
+	encode zstd gzip
+	# Fotos de hasta 4 por publicación: margen holgado para la subida.
+	request_body {
+		max_size 40MB
+	}
+	reverse_proxy altoque-web:3000
+}
+
+# Avanza: su contenedor web (Caddy interno) pasa a servir HTTP en :80 (DOMAIN=:80 en su .env)
+# y deja de publicar 80/443; el HTTPS lo pone este proxy.
+avanza.zcorp23.com {
+	reverse_proxy avanza-web:80
+}
