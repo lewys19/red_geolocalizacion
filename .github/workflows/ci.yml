@@ -68,6 +68,8 @@ jobs:
           cache-dependency-path: web/package-lock.json
       - run: npm ci
       - run: npm run lint
+      # Tipos que Next genera (LayoutProps, PageProps): no están en git (.next/ y next-env.d.ts se ignoran).
+      - run: npx next typegen
       - run: npx tsc --noEmit
       - run: npm test
       - run: npm run build
