@@ -9,7 +9,7 @@ altoque.zcorp23.com {
 	reverse_proxy altoque-web:3000
 }
 
-# Avanza: su contenedor web (Caddy interno) pasa a servir HTTP en :80 (DOMAIN=:80 en su .env)
+# Avanza: su contenedor web (Caddy interno) sirve HTTP en :80 (DOMAIN=":80" en su docker-compose.prod.yml)
 # y deja de publicar 80/443; el HTTPS lo pone este proxy.
 avanza.zcorp23.com {
 	reverse_proxy avanza-web:80

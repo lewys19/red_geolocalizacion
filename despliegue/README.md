@@ -21,8 +21,8 @@ El VPS no tiene el código fuente: solo esos archivos y las imágenes de GHCR.
 
 1. DNS: registro A `altoque` → IP del VPS (en el cPanel de zcorp23.com).
 2. `docker network create proxy`
-3. Avanza detrás del proxy: en `~/avanza/.env` poner `DOMAIN=:80`; en su compose quitar los puertos
-   80/443 y unir `web` a la red `proxy` (externa).
+3. Avanza detrás del proxy: copiar a `~/avanza/docker-compose.yml` su `docker-compose.prod.yml` nuevo
+   (rama `fix/jh-avanza-detras-del-proxy`: sin puertos 80/443, `DOMAIN=":80"`, unido a la red `proxy`).
 4. `~/proxy`: copiar los dos archivos de `despliegue/proxy/` y `docker compose up -d`.
 5. `~/altoque`: copiar `docker-compose.prod.yml` como `docker-compose.yml`, crear `.env` desde
    `.env.prod.example` (`chmod 600 .env`), `docker login ghcr.io`, `docker compose pull`, `docker compose up -d`.
