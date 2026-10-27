@@ -1,6 +1,24 @@
 # Un bloque por dominio: el proxy pide el certificado y reenvía al contenedor por la red "proxy".
 
+# Cabeceras de seguridad comunes a todos los sitios.
+(seguridad) {
+	header {
+		# Solo HTTPS durante un año (el navegador ya no intenta http://).
+		Strict-Transport-Security "max-age=31536000"
+		# El navegador no adivina tipos de archivo (evita que una "imagen" se ejecute como script).
+		X-Content-Type-Options "nosniff"
+		# Nadie puede meter el sitio dentro de un iframe ajeno (clickjacking).
+		X-Frame-Options "DENY"
+		Referrer-Policy "strict-origin-when-cross-origin"
+		# Ubicación solo para el propio sitio (el mapa la usa); cámara y micrófono, para nadie.
+		Permissions-Policy "geolocation=(self), camera=(), microphone=()"
+		# No anunciar qué servidor se usa.
+		-Server
+	}
+}
+
 altoque.zcorp23.com {
+	import seguridad
 	encode zstd gzip
 	# Fotos de hasta 4 por publicación: margen holgado para la subida.
 	request_body {
@@ -12,5 +30,6 @@ altoque.zcorp23.com {
 # Avanza: su contenedor web (Caddy interno) sirve HTTP en :80 (DOMAIN=":80" en su docker-compose.prod.yml)
 # y deja de publicar 80/443; el HTTPS lo pone este proxy.
 avanza.zcorp23.com {
+	import seguridad
 	reverse_proxy avanza-web:80
 }
