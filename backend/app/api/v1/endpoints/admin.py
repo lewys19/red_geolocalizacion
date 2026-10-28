@@ -22,6 +22,7 @@ from app.core.config import settings
 from app.core.errores import ErrorNegocio
 from app.models import EstadoNegocio
 from app.schemas.admin import (
+    NegocioConDuenoOut,
     AsignarRolIn,
     PaginaUsuarios,
     PermisoOut,
@@ -130,10 +131,15 @@ def eliminar_rol(rol_id: int, _quien: GestionarRoles, db: Db) -> Response:
 # ---------- Negocios ----------
 
 
-@router.get("/negocios", response_model=list[NegocioOut])
-def cola(_quien: VerNegocios, db: Db, estado: EstadoNegocio = EstadoNegocio.PENDIENTE) -> list[NegocioOut]:
-    """Negocios por estado; por defecto, los que esperan aprobación (el más antiguo primero)."""
-    return negocios.listar_por_estado(db, estado)
+@router.get("/negocios", response_model=list[NegocioConDuenoOut])
+def cola(
+    _quien: VerNegocios,
+    db: Db,
+    estado: EstadoNegocio = EstadoNegocio.PENDIENTE,
+    q: Annotated[str | None, Query(max_length=100, description="Negocio, código, distrito, categoría o dueño")] = None,
+) -> list[NegocioConDuenoOut]:
+    """Negocios por estado, con su dueño; por defecto, los que esperan aprobación (el más antiguo primero)."""
+    return negocios.listar_por_estado(db, estado, q)
 
 
 @router.post("/negocios/{negocio_id}/aprobar", response_model=NegocioOut)

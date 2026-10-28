@@ -8,8 +8,8 @@ import { MiniMapa } from "@/components/MiniMapa";
 import { Migas, SinPermiso, puede, usePanel } from "@/components/panel/Panel";
 import { Aviso, BotonAccion, Caja, GrupoAcciones, TD, TH } from "@/components/panel/Tabla";
 import { ErrorApi, pedir } from "@/lib/api";
-import { DIAS, codigoNegocio, hora } from "@/lib/formato";
-import type { EstadoNegocio, NegocioDetalle } from "@/lib/tipos";
+import { DIAS, codigoNegocio, codigoUsuario, hora } from "@/lib/formato";
+import type { EstadoNegocio, NegocioConDueno, NegocioDetalle } from "@/lib/tipos";
 
 const ESTADOS: { valor: EstadoNegocio; texto: string }[] = [
   { valor: "pendiente", texto: "Por revisar" },
@@ -131,16 +131,26 @@ export function Negocios() {
   // El dashboard enlaza con ?estado=aprobado.
   const pedido = useSearchParams().get("estado");
   const [estado, setEstado] = useState<EstadoNegocio>(ESTADOS.find((e) => e.valor === pedido)?.valor ?? "pendiente");
-  const [negocios, setNegocios] = useState<NegocioDetalle[] | null>(null);
+  const [negocios, setNegocios] = useState<NegocioConDueno[] | null>(null);
+  const [texto, setTexto] = useState("");
+  const [q, setQ] = useState("");
   const [abierto, setAbierto] = useState<number | null>(null);
   const [ok, setOk] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
+  // La búsqueda se aplica al dejar de escribir (no una petición por tecla).
+  useEffect(() => {
+    const espera = setTimeout(() => setQ(texto.trim()), 350);
+    return () => clearTimeout(espera);
+  }, [texto]);
+
   const cargar = useCallback(() => {
-    pedir<NegocioDetalle[]>(`/admin/negocios?estado=${estado}`, { conSesion: true })
+    const params = new URLSearchParams({ estado });
+    if (q) params.set("q", q);
+    pedir<NegocioConDueno[]>(`/admin/negocios?${params}`, { conSesion: true })
       .then(setNegocios)
       .catch((e) => setError(e instanceof ErrorApi ? e.message : "No se pudo cargar la lista."));
-  }, [estado]);
+  }, [estado, q]);
 
   useEffect(() => {
     if (puede(yo, "negocios.ver")) cargar();
@@ -148,7 +158,7 @@ export function Negocios() {
 
   if (!puede(yo, "negocios.ver")) return <SinPermiso />;
   const moderar = puede(yo, "negocios.moderar");
-  const columnas = moderar && estado !== "aprobado" ? 7 : 6;
+  const columnas = moderar && estado !== "aprobado" ? 8 : 7;
 
   return (
     <div className="mx-auto max-w-6xl">
@@ -178,22 +188,40 @@ export function Negocios() {
         ))}
       </div>
 
+      <label className="mb-4 flex w-full items-center overflow-hidden rounded-md border border-borde bg-superficie shadow-sm sm:max-w-md">
+        <span className="sr-only">Buscar negocios</span>
+        <input
+          type="search"
+          value={texto}
+          onChange={(e) => setTexto(e.target.value)}
+          placeholder="Buscar por negocio, código, dueño, distrito o categoría"
+          className="min-w-0 flex-1 bg-transparent px-3 py-2 text-sm outline-none"
+        />
+        <svg viewBox="0 0 24 24" className="mx-3 h-4 w-4 text-texto-2" aria-hidden="true">
+          <path
+            d="M10 2a8 8 0 0 1 6.3 12.9l5.4 5.4-1.4 1.4-5.4-5.4A8 8 0 1 1 10 2zm0 2a6 6 0 1 0 0 12 6 6 0 0 0 0-12z"
+            fill="currentColor"
+          />
+        </svg>
+      </label>
+
       <div className="mb-3 space-y-2">
         <Aviso ok={ok} error={error} />
       </div>
 
       <Caja>
         <div className="overflow-x-auto">
-          <table className="w-full min-w-[48rem] text-sm">
+          <table className="w-full min-w-[56rem] text-sm">
             <thead className="bg-stone-500 text-white dark:bg-stone-700">
               <tr>
                 <th className={TH}>Ver</th>
                 <th className={TH}>Código</th>
                 <th className={TH}>Nombre</th>
+                <th className={TH}>Dueño</th>
                 <th className={TH}>Categoría</th>
                 <th className={TH}>Distrito</th>
                 <th className={TH}>{estado === "rechazado" ? "Motivo" : "Dirección"}</th>
-                {columnas === 7 && <th className={TH}>Decisión</th>}
+                {columnas === 8 && <th className={TH}>Decisión</th>}
               </tr>
             </thead>
             <tbody className="divide-y divide-borde">
@@ -206,7 +234,7 @@ export function Negocios() {
               ) : negocios.length === 0 ? (
                 <tr>
                   <td colSpan={columnas} className={`${TD} text-center text-texto-2`}>
-                    No hay negocios en esta lista.
+                    {q ? "Ningún negocio coincide con la búsqueda." : "No hay negocios en esta lista."}
                   </td>
                 </tr>
               ) : (
@@ -224,12 +252,18 @@ export function Negocios() {
                       </td>
                       <td className={`${TD} font-mono text-xs`}>{codigoNegocio(n.id)}</td>
                       <td className={`${TD} font-medium`}>{n.nombre}</td>
+                      <td className={TD}>
+                        <Link href={`/admin/usuarios/${n.dueno.id}`} className="text-marca-fuerte hover:underline">
+                          @{n.dueno.username}
+                        </Link>
+                        <span className="block font-mono text-[11px] text-texto-2">{codigoUsuario(n.dueno.id)}</span>
+                      </td>
                       <td className={TD}>{n.categoria}</td>
                       <td className={TD}>{n.distrito}</td>
                       <td className={`${TD} ${estado === "rechazado" ? "text-error" : ""}`}>
                         {estado === "rechazado" ? n.motivo_rechazo : n.direccion}
                       </td>
-                      {columnas === 7 && (
+                      {columnas === 8 && (
                         <td className={TD}>
                           <Decision
                             n={n}

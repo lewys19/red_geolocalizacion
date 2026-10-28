@@ -94,6 +94,18 @@ def test_operador_aprueba_y_rechaza(client: TestClient, registrar: Callable[...,
     assert client.get("/api/v1/admin/negocios", headers=cabeceras(ana)).status_code == 403
     cola = client.get("/api/v1/admin/negocios", headers=cabeceras(ope)).json()
     assert [n["id"] for n in cola] == [uno["id"], dos["id"]]
+    # Cada negocio trae a su dueño, y se busca por nombre, código del negocio o datos del dueño.
+    assert cola[0]["dueno"]["username"] == ana["usuario"]["username"]
+
+    def buscar(q: str) -> list[int]:
+        r = client.get("/api/v1/admin/negocios", params={"q": q}, headers=cabeceras(ope))
+        return [n["id"] for n in r.json()]
+
+    assert buscar("dragón") == [dos["id"]]
+    assert buscar(f"n{dos['id']:08d}") == [dos["id"]]
+    assert buscar(f"@{ana['usuario']['username']}") == [uno["id"], dos["id"]]
+    assert buscar(f"u{ana['usuario']['id']:08d}") == [uno["id"], dos["id"]]
+    assert buscar("no-existe-xyz") == []
 
     ok = client.post(f"/api/v1/admin/negocios/{uno['id']}/aprobar", headers=cabeceras(ope))
     assert ok.json()["estado"] == "aprobado"

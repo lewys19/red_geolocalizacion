@@ -4,13 +4,14 @@ import re
 import unicodedata
 
 from fastapi import status
-from sqlalchemy import func, select
+from sqlalchemy import func, or_, select
 from sqlalchemy.orm import Session, selectinload
 
 from app.core.config import settings
 from app.core.errores import ErrorNegocio
 from app.core.geo import coordenadas, dentro_del_piloto, punto
 from app.models import Categoria, EstadoNegocio, Horario, Negocio, Usuario
+from app.schemas.admin import DuenoOut, NegocioConDuenoOut
 from app.schemas.negocio import HorarioOut, NegocioCambios, NegocioIn, NegocioOut, Ubicacion
 
 
@@ -168,14 +169,40 @@ def mios(db: Session, usuario: Usuario) -> list[NegocioOut]:
 # ---------- Equipo (panel) ----------
 
 
-def listar_por_estado(db: Session, estado: EstadoNegocio) -> list[NegocioOut]:
-    negocios = db.scalars(
+def listar_por_estado(db: Session, estado: EstadoNegocio, q: str | None = None) -> list[NegocioConDuenoOut]:
+    """Para el panel: cada negocio con el usuario que lo creó. `q` busca por nombre, código (n00000012),
+    distrito, categoría o dueño (nombre, username, correo o código u00000003)."""
+    consulta = (
         select(Negocio)
-        .options(selectinload(Negocio.horarios), selectinload(Negocio.categoria))
+        .join(Usuario, Usuario.id == Negocio.usuario_id)
+        .join(Categoria, Categoria.id == Negocio.categoria_id)
+        .options(selectinload(Negocio.horarios), selectinload(Negocio.categoria), selectinload(Negocio.dueno))
         .where(Negocio.estado == estado, Negocio.eliminado_en.is_(None))
-        .order_by(Negocio.creado_en)  # el que espera más, primero
-    ).all()
-    return [a_salida(n) for n in negocios]
+    )
+    if q and q.strip():
+        texto = q.strip().lower().removeprefix("@")
+        patron = f"%{texto}%"
+        condiciones = [
+            Negocio.nombre.ilike(patron),
+            Negocio.distrito.ilike(patron),
+            Categoria.nombre.ilike(patron),
+            Usuario.nombre.ilike(patron),
+            Usuario.username.ilike(patron),
+            Usuario.email.ilike(patron),
+        ]
+        # Códigos: n00000012 → negocio 12; u00000003 → negocios del usuario 3.
+        numero = texto[1:] if texto[:1] in ("n", "u") else ""
+        if numero.isdigit() and len(numero) <= 9:
+            condiciones.append(Negocio.id == int(numero) if texto[0] == "n" else Negocio.usuario_id == int(numero))
+        consulta = consulta.where(or_(*condiciones))
+    negocios = db.scalars(consulta.order_by(Negocio.creado_en)).all()  # el que espera más, primero
+    return [
+        NegocioConDuenoOut(
+            **a_salida(n).model_dump(),
+            dueno=DuenoOut(id=n.dueno.id, username=n.dueno.username, nombre=n.dueno.nombre, email=n.dueno.email),
+        )
+        for n in negocios
+    ]
 
 
 def decidir(db: Session, negocio_id: int, aprobar: bool, motivo: str | None = None) -> NegocioOut:

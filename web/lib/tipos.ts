@@ -197,6 +197,11 @@ export interface Yo {
   permisos: string[];
 }
 
+/** Negocio en la tabla del panel, con el usuario que lo creó. */
+export interface NegocioConDueno extends NegocioDetalle {
+  dueno: { id: number; username: string; nombre: string; email: string };
+}
+
 /** Negocio completo, con imágenes, tal como lo ve el equipo de Altoque. */
 export interface NegocioAdmin extends NegocioDetalle {
   logo: string | null;

@@ -26,6 +26,19 @@ class ResumenOut(BaseModel):
     equipo: int  # cuentas con acceso al panel
 
 
+class DuenoOut(BaseModel):
+    id: int
+    username: str
+    nombre: str
+    email: str
+
+
+class NegocioConDuenoOut(NegocioOut):
+    """Un negocio en la tabla del panel, con el usuario que lo creó (su dueño)."""
+
+    dueno: DuenoOut
+
+
 class NegocioAdminOut(NegocioOut):
     logo: str | None
     portada: str | None
