@@ -4,7 +4,7 @@ import uuid
 
 from fastapi import status
 from geoalchemy2 import Geography
-from sqlalchemy import Select, cast, func, or_, select
+from sqlalchemy import Select, cast, func, or_, select, update
 from sqlalchemy.orm import Session, selectinload
 
 from app.almacen import Almacen
@@ -75,7 +75,36 @@ def crear(
         for clave in guardadas:  # sin registro en la base, los archivos quedarían huérfanos
             almacen.borrar(clave)
         raise
-    return _cargar_una(db, almacen, publicacion.id)
+    return _cargar_una(db, almacen, publicacion.id, usuario)
+
+
+def editar(db: Session, almacen: Almacen, usuario: Usuario, negocio_id: int, publicacion_id: int, texto: str) -> PublicacionOut:
+    """Solo el dueño cambia el texto (las fotos se quedan). Queda marcada como editada."""
+    exigir_dueno(db, usuario, negocio_id)
+    publicacion = db.get(Publicacion, publicacion_id)
+    if publicacion is None or publicacion.negocio_id != negocio_id:
+        raise ErrorNegocio(status.HTTP_404_NOT_FOUND, "Publicación no encontrada.")
+    if not texto and not publicacion.fotos:
+        raise ErrorNegocio(status.HTTP_422_UNPROCESSABLE_CONTENT, "Una publicación sin fotos necesita texto.")
+    if texto != publicacion.texto:
+        publicacion.texto = texto
+        publicacion.editado_en = func.now()
+        db.commit()
+    return _cargar_una(db, almacen, publicacion_id, usuario)
+
+
+def contar_compartido(db: Session, publicacion_id: int) -> int:
+    """Suma 1 de forma atómica (dos personas compartiendo a la vez no se pisan)."""
+    nuevo = db.scalar(
+        update(Publicacion)
+        .where(Publicacion.id == publicacion_id)
+        .values(compartidos=Publicacion.compartidos + 1)
+        .returning(Publicacion.compartidos)
+    )
+    if nuevo is None:
+        raise ErrorNegocio(status.HTTP_404_NOT_FOUND, "Publicación no encontrada.")
+    db.commit()
+    return nuevo
 
 
 def borrar(db: Session, almacen: Almacen, usuario: Usuario, negocio_id: int, publicacion_id: int) -> None:
@@ -91,22 +120,30 @@ def borrar(db: Session, almacen: Almacen, usuario: Usuario, negocio_id: int, pub
 
 
 def _a_salida(
-    p: Publicacion, categoria: str, almacen: Almacen, distancia_m: float | None, resumen: social.Resumen
+    p: Publicacion,
+    categoria: str,
+    almacen: Almacen,
+    distancia_m: float | None,
+    resumen: social.Resumen,
+    usuario: Usuario | None = None,
 ) -> PublicacionOut:
     return PublicacionOut(
         id=p.id,
         texto=p.texto,
         creado_en=p.creado_en,
+        editado_en=p.editado_en,
         negocio=mini(p.negocio, categoria, almacen, distancia_m),
         fotos=[FotoOut(id=f.id, url=almacen.url(f.clave), ancho=f.ancho, alto=f.alto) for f in p.fotos],
         reacciones=resumen.reacciones,
         total_reacciones=resumen.total,
         total_comentarios=resumen.comentarios,
+        compartidos=p.compartidos,
         mi_reaccion=resumen.mi_reaccion,  # type: ignore[arg-type]
+        es_mia=usuario is not None and p.negocio.usuario_id == usuario.id,
     )
 
 
-def _cargar_una(db: Session, almacen: Almacen, publicacion_id: int) -> PublicacionOut:
+def _cargar_una(db: Session, almacen: Almacen, publicacion_id: int, usuario: Usuario | None = None) -> PublicacionOut:
     p, categoria = db.execute(
         select(Publicacion, Categoria.nombre)
         .join(Negocio, Negocio.id == Publicacion.negocio_id)
@@ -114,7 +151,8 @@ def _cargar_una(db: Session, almacen: Almacen, publicacion_id: int) -> Publicaci
         .options(selectinload(Publicacion.fotos), selectinload(Publicacion.negocio).selectinload(Negocio.fotos))
         .where(Publicacion.id == publicacion_id)
     ).one()
-    return _a_salida(p, categoria, almacen, None, social.Resumen())
+    resumen = social.resumenes(db, [publicacion_id], usuario)[publicacion_id]
+    return _a_salida(p, categoria, almacen, None, resumen, usuario)
 
 
 # ---------- Muro ----------
@@ -151,7 +189,8 @@ def muro(
     resumen = social.resumenes(db, [f[0].id for f in filas], usuario)
     return MuroOut(
         publicaciones=[
-            _a_salida(f[0], f[1], almacen, f[2] if distancia is not None else None, resumen[f[0].id]) for f in filas
+            _a_salida(f[0], f[1], almacen, f[2] if distancia is not None else None, resumen[f[0].id], usuario)
+            for f in filas
         ],
         siguiente=filas[-1][0].id if hay_mas else None,
     )

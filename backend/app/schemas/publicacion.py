@@ -1,6 +1,8 @@
 from datetime import datetime
 
-from pydantic import BaseModel
+from typing import Annotated
+
+from pydantic import BaseModel, Field, StringConstraints
 
 from app.schemas.catalogo import FotoOut
 from app.schemas.social import TipoReaccion
@@ -22,12 +24,19 @@ class PublicacionOut(BaseModel):
     id: int
     texto: str
     creado_en: datetime
+    editado_en: datetime | None
     negocio: NegocioMini
     fotos: list[FotoOut]
     reacciones: dict[str, int]
     total_reacciones: int
     total_comentarios: int
+    compartidos: int
     mi_reaccion: TipoReaccion | None = None  # solo si quien mira inició sesión
+    es_mia: bool = False  # quien mira es el dueño del negocio: puede editarla o borrarla
+
+
+class PublicacionCambios(BaseModel):
+    texto: Annotated[str, StringConstraints(strip_whitespace=True), Field(max_length=2000)]
 
 
 class MuroOut(BaseModel):

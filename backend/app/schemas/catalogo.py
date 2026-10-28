@@ -69,7 +69,8 @@ class FichaOut(BaseModel):
     logo: str | None
     portada: str | None
     seguidores: int
-    total_reacciones: int  # "me gusta" sumados de todas sus publicaciones
+    total_reacciones: int  # reacciones sumadas de todas sus publicaciones
+    total_me_gusta: int  # «me gusta» a la página del negocio
     total_publicaciones: int
 
 

@@ -16,6 +16,7 @@ from app.models import (
     TIPOS_REACCION,
     Comentario,
     EstadoNegocio,
+    MeGustaNegocio,
     Negocio,
     Publicacion,
     Reaccion,
@@ -27,6 +28,7 @@ from app.schemas.social import (
     ComentarioOut,
     ComentariosOut,
     ImagenOut,
+    MeGustaOut,
     ReaccionesOut,
     RelacionOut,
     SeguirOut,
@@ -101,7 +103,33 @@ def seguir(db: Session, usuario: Usuario, negocio_id: int, sigue: bool) -> Segui
 
 
 def relacion(db: Session, usuario: Usuario, negocio_id: int) -> RelacionOut:
-    return RelacionOut(lo_sigo=_lo_sigue(db, usuario, negocio_id), es_miembro=es_dueno(db, usuario, negocio_id))
+    return RelacionOut(
+        lo_sigo=_lo_sigue(db, usuario, negocio_id),
+        me_gusta=db.get(MeGustaNegocio, (usuario.id, negocio_id)) is not None,
+        es_miembro=es_dueno(db, usuario, negocio_id),
+    )
+
+
+# ---------- «Me gusta» de la página ----------
+
+
+def contar_me_gusta(db: Session, negocio_id: int) -> int:
+    return (
+        db.scalar(select(func.count()).select_from(MeGustaNegocio).where(MeGustaNegocio.negocio_id == negocio_id))
+        or 0
+    )
+
+
+def me_gusta(db: Session, usuario: Usuario, negocio_id: int, le_gusta: bool) -> MeGustaOut:
+    """Dar o quitar «me gusta» a la página. Repetirlo no es un error (doble clic, dos pestañas)."""
+    _negocio_visible(db, negocio_id)
+    actual = db.get(MeGustaNegocio, (usuario.id, negocio_id))
+    if le_gusta and actual is None:
+        db.add(MeGustaNegocio(usuario_id=usuario.id, negocio_id=negocio_id))
+    elif not le_gusta and actual is not None:
+        db.delete(actual)
+    db.commit()
+    return MeGustaOut(me_gusta=le_gusta, total=contar_me_gusta(db, negocio_id))
 
 
 # ---------- Reacciones ----------

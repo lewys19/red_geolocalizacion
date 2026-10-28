@@ -62,6 +62,11 @@ export function codigoUsuario(id: number): string {
   return `u${String(id).padStart(8, "0")}`;
 }
 
+/** Código del negocio: n + su id en 8 cifras. No cambia nunca (el id es fijo desde que se registra). */
+export function codigoNegocio(id: number): string {
+  return `n${String(id).padStart(8, "0")}`;
+}
+
 /** Fecha corta en Lima: "27/10/2026". */
 export function fecha(iso: string): string {
   return new Date(iso).toLocaleDateString("es-PE", { timeZone: "America/Lima" });

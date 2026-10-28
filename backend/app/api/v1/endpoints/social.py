@@ -11,6 +11,7 @@ from app.schemas.social import (
     ComentarioOut,
     ComentariosOut,
     ImagenOut,
+    MeGustaOut,
     ReaccionesOut,
     ReaccionIn,
     RelacionOut,
@@ -62,9 +63,20 @@ def dejar_de_seguir(negocio_id: int, usuario: UsuarioActual, db: Db) -> SeguirOu
     return social.seguir(db, usuario, negocio_id, False)
 
 
+@router.put("/negocios/{negocio_id}/me-gusta", response_model=MeGustaOut)
+def dar_me_gusta(negocio_id: int, usuario: UsuarioActual, db: Db) -> MeGustaOut:
+    """«Me gusta» a la página del negocio (distinto de seguirlo)."""
+    return social.me_gusta(db, usuario, negocio_id, True)
+
+
+@router.delete("/negocios/{negocio_id}/me-gusta", response_model=MeGustaOut)
+def quitar_me_gusta(negocio_id: int, usuario: UsuarioActual, db: Db) -> MeGustaOut:
+    return social.me_gusta(db, usuario, negocio_id, False)
+
+
 @router.get("/negocios/{negocio_id}/relacion", response_model=RelacionOut)
 def relacion(negocio_id: int, usuario: UsuarioActual, db: Db) -> RelacionOut:
-    """Si sigues a este negocio y si es tuyo (para mostrar «Seguir» o «Editar perfil»)."""
+    """Si lo sigues, si te gusta y si es tuyo (para mostrar «Seguir»/«Me gusta» o los botones de editar)."""
     return social.relacion(db, usuario, negocio_id)
 
 

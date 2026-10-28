@@ -1,6 +1,7 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
 
+import { codigoNegocio } from "@/lib/formato";
 import type { NegocioAdmin } from "@/lib/tipos";
 
 const CELDA = "border-b border-borde px-3 py-2 text-left align-top";
@@ -8,6 +9,7 @@ const CELDA = "border-b border-borde px-3 py-2 text-left align-top";
 /** Todo lo que el negocio cargó en la sección de su dueño. */
 export function DetalleNegocio({ n }: { n: NegocioAdmin }) {
   const filas: [string, ReactNode][] = [
+    ["Código", codigoNegocio(n.id)],
     ["Estado", n.estado + (n.motivo_rechazo ? ` (${n.motivo_rechazo})` : "")],
     ["Categoría", n.categoria],
     ["Descripción", n.descripcion ?? "—"],
@@ -51,7 +53,9 @@ export function DetalleNegocio({ n }: { n: NegocioAdmin }) {
             </td>
           </tr>
           <tr>
-            <th className="bg-fondo px-3 py-2 text-left align-top font-medium text-texto-2">Galería ({n.fotos.length})</th>
+            <th className="bg-fondo px-3 py-2 text-left align-top font-medium text-texto-2">
+              Galería ({n.fotos.length})
+            </th>
             <td className="px-3 py-2">
               <div className="flex flex-wrap gap-1">
                 {n.fotos.length

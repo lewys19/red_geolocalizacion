@@ -100,6 +100,8 @@ export interface Ficha {
   portada: string | null;
   seguidores: number;
   total_reacciones: number;
+  /** «Me gusta» a la página del negocio. */
+  total_me_gusta: number;
   total_publicaciones: number;
 }
 
@@ -137,12 +139,16 @@ export interface Publicacion {
   id: number;
   texto: string;
   creado_en: string;
+  editado_en: string | null;
   negocio: NegocioMini;
   fotos: Foto[];
   reacciones: Record<TipoReaccion, number>;
   total_reacciones: number;
   total_comentarios: number;
+  compartidos: number;
   mi_reaccion: TipoReaccion | null;
+  /** Quien mira es el dueño del negocio: puede editarla o borrarla. */
+  es_mia: boolean;
 }
 
 export type TipoReaccion = "me_gusta" | "me_encanta" | "wow";

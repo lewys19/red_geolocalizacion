@@ -21,6 +21,18 @@ class Seguidor(Base):
     creado_en: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
 
+class MeGustaNegocio(Base):
+    """«Me gusta» a la página del negocio (como en Facebook). Distinto de seguir y de reaccionar a una publicación."""
+
+    __tablename__ = "me_gusta_negocio"
+
+    usuario_id: Mapped[int] = mapped_column(ForeignKey("usuarios.id", ondelete="CASCADE"), primary_key=True)
+    negocio_id: Mapped[int] = mapped_column(
+        ForeignKey("negocios.id", ondelete="CASCADE"), primary_key=True, index=True
+    )
+    creado_en: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
+
 class Reaccion(Base):
     """Una reacción por persona y publicación (cambiarla reemplaza la anterior)."""
 

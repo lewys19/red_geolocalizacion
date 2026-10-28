@@ -20,7 +20,13 @@ function Iniciales({ nombre }: { nombre: string }) {
   );
 }
 
-function ListaComentarios({ publicacionId, alCambiarTotal }: { publicacionId: number; alCambiarTotal: (n: number) => void }) {
+function ListaComentarios({
+  publicacionId,
+  alCambiarTotal,
+}: {
+  publicacionId: number;
+  alCambiarTotal: (n: number) => void;
+}) {
   const sesion = useSesion();
   const [datos, setDatos] = useState<Comentarios | null>(null);
   const [texto, setTexto] = useState("");
@@ -131,6 +137,20 @@ function ListaComentarios({ publicacionId, alCambiarTotal }: { publicacionId: nu
   );
 }
 
+/** Copia con el método antiguo (un textarea temporal); sirve donde no hay navigator.clipboard. */
+function copiarSinPortapapeles(texto: string) {
+  const area = document.createElement("textarea");
+  area.value = texto;
+  area.setAttribute("readonly", "");
+  area.style.position = "fixed";
+  area.style.opacity = "0";
+  document.body.appendChild(area);
+  area.select();
+  const copiado = document.execCommand("copy");
+  area.remove();
+  if (!copiado) throw new Error("No se pudo copiar");
+}
+
 export function AccionesPublicacion({ publicacion: p }: { publicacion: Publicacion }) {
   const sesion = useSesion();
   const [estado, setEstado] = useState<Reacciones>({
@@ -141,6 +161,7 @@ export function AccionesPublicacion({ publicacion: p }: { publicacion: Publicaci
   const [comentarios, setComentarios] = useState(p.total_comentarios);
   const [abiertos, setAbiertos] = useState(false);
   const [aviso, setAviso] = useState<string | null>(null);
+  const [compartidos, setCompartidos] = useState(p.compartidos);
 
   async function reaccionar(tipo: TipoReaccion) {
     if (!sesion) return abrirAcceso("ingresar", "Ingresa para reaccionar a las publicaciones.");
@@ -168,6 +189,10 @@ export function AccionesPublicacion({ publicacion: p }: { publicacion: Publicaci
   }
 
   async function compartir() {
+    // Se cuenta el intento: el navegador no avisa si de verdad se envió.
+    pedir<{ compartidos: number }>(`/publicaciones/${p.id}/compartido`, { metodo: "POST" })
+      .then((r) => setCompartidos(r.compartidos))
+      .catch(() => {});
     const url = `${window.location.origin}/n/${p.negocio.slug}#publicacion-${p.id}`;
     const titulo = `${p.negocio.nombre} en Altoque`;
     try {
@@ -175,7 +200,8 @@ export function AccionesPublicacion({ publicacion: p }: { publicacion: Publicaci
         await navigator.share({ title: titulo, text: p.texto.slice(0, 120), url });
         return;
       }
-      await navigator.clipboard.writeText(url);
+      if (navigator.clipboard) await navigator.clipboard.writeText(url);
+      else copiarSinPortapapeles(url); // sin https (p. ej. probando en la red local) no hay navigator.clipboard
       setAviso("¡Enlace copiado!");
     } catch (e) {
       if ((e as Error).name !== "AbortError") setAviso("No se pudo compartir. Copia el enlace de la barra.");
@@ -197,7 +223,9 @@ export function AccionesPublicacion({ publicacion: p }: { publicacion: Publicaci
               aria-pressed={mia}
               title={r.texto}
               className={`flex items-center gap-1.5 rounded-full px-2.5 py-1.5 transition ${
-                mia ? "bg-marca-suave font-semibold text-marca-fuerte ring-1 ring-marca/40" : "text-texto-2 hover:bg-fondo"
+                mia
+                  ? "bg-marca-suave font-semibold text-marca-fuerte ring-1 ring-marca/40"
+                  : "text-texto-2 hover:bg-fondo"
               }`}
             >
               <span className={`text-lg leading-none transition ${mia ? "scale-110" : ""}`} aria-hidden="true">
@@ -237,6 +265,7 @@ export function AccionesPublicacion({ publicacion: p }: { publicacion: Publicaci
                 strokeLinejoin="round"
               />
             </svg>
+            <span className="tabular-nums">{compartidos > 0 ? compartidos : ""}</span>
             <span className="hidden sm:inline">Compartir</span>
           </button>
         </span>

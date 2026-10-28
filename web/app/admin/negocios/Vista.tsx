@@ -8,7 +8,7 @@ import { MiniMapa } from "@/components/MiniMapa";
 import { Migas, SinPermiso, puede, usePanel } from "@/components/panel/Panel";
 import { Aviso, BotonAccion, Caja, GrupoAcciones, TD, TH } from "@/components/panel/Tabla";
 import { ErrorApi, pedir } from "@/lib/api";
-import { DIAS, hora } from "@/lib/formato";
+import { DIAS, codigoNegocio, hora } from "@/lib/formato";
 import type { EstadoNegocio, NegocioDetalle } from "@/lib/tipos";
 
 const ESTADOS: { valor: EstadoNegocio; texto: string }[] = [
@@ -47,7 +47,15 @@ function Detalle({ n }: { n: NegocioDetalle }) {
   );
 }
 
-function Decision({ n, alDecidir, alError }: { n: NegocioDetalle; alDecidir: (texto: string) => void; alError: (e: string) => void }) {
+function Decision({
+  n,
+  alDecidir,
+  alError,
+}: {
+  n: NegocioDetalle;
+  alDecidir: (texto: string) => void;
+  alError: (e: string) => void;
+}) {
   const [rechazando, setRechazando] = useState(false);
   const [motivo, setMotivo] = useState("");
 
@@ -77,7 +85,11 @@ function Decision({ n, alDecidir, alError }: { n: NegocioDetalle; alDecidir: (te
           className="rounded-md border border-borde bg-superficie px-2 py-1.5 text-sm"
         />
         <div className="flex gap-2">
-          <button type="button" onClick={() => setRechazando(false)} className="rounded-md border border-borde px-2 py-1 text-xs">
+          <button
+            type="button"
+            onClick={() => setRechazando(false)}
+            className="rounded-md border border-borde px-2 py-1 text-xs"
+          >
             Cancelar
           </button>
           <button
@@ -94,11 +106,19 @@ function Decision({ n, alDecidir, alError }: { n: NegocioDetalle; alDecidir: (te
   }
   return (
     <div className="flex gap-2">
-      <button type="button" onClick={() => decidir(true)} className="rounded-md bg-green-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-green-700">
+      <button
+        type="button"
+        onClick={() => decidir(true)}
+        className="rounded-md bg-green-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-green-700"
+      >
         Aprobar
       </button>
       {n.estado !== "rechazado" && (
-        <button type="button" onClick={() => setRechazando(true)} className="rounded-md border border-borde px-3 py-1.5 text-xs font-semibold hover:border-red-600">
+        <button
+          type="button"
+          onClick={() => setRechazando(true)}
+          className="rounded-md border border-borde px-3 py-1.5 text-xs font-semibold hover:border-red-600"
+        >
           Rechazar
         </button>
       )}
@@ -128,14 +148,17 @@ export function Negocios() {
 
   if (!puede(yo, "negocios.ver")) return <SinPermiso />;
   const moderar = puede(yo, "negocios.moderar");
-  const columnas = moderar && estado !== "aprobado" ? 6 : 5;
+  const columnas = moderar && estado !== "aprobado" ? 7 : 6;
 
   return (
     <div className="mx-auto max-w-6xl">
       <Migas items={[{ texto: "Negocios" }]} />
       <h1 className="mb-4 text-2xl font-bold tracking-tight">Negocios</h1>
 
-      <div role="tablist" className="mb-4 inline-flex rounded-lg border border-borde bg-superficie p-1 text-sm font-medium shadow-sm">
+      <div
+        role="tablist"
+        className="mb-4 inline-flex rounded-lg border border-borde bg-superficie p-1 text-sm font-medium shadow-sm"
+      >
         {ESTADOS.map((e) => (
           <button
             key={e.valor}
@@ -165,11 +188,12 @@ export function Negocios() {
             <thead className="bg-stone-500 text-white dark:bg-stone-700">
               <tr>
                 <th className={TH}>Ver</th>
+                <th className={TH}>Código</th>
                 <th className={TH}>Nombre</th>
                 <th className={TH}>Categoría</th>
                 <th className={TH}>Distrito</th>
                 <th className={TH}>{estado === "rechazado" ? "Motivo" : "Dirección"}</th>
-                {columnas === 6 && <th className={TH}>Decisión</th>}
+                {columnas === 7 && <th className={TH}>Decisión</th>}
               </tr>
             </thead>
             <tbody className="divide-y divide-borde">
@@ -191,16 +215,21 @@ export function Negocios() {
                     <tr className="odd:bg-fondo/60">
                       <td className={TD}>
                         <GrupoAcciones>
-                          <BotonAccion tipo="ver" titulo="Ver detalle" onClick={() => setAbierto(abierto === n.id ? null : n.id)} />
+                          <BotonAccion
+                            tipo="ver"
+                            titulo="Ver detalle"
+                            onClick={() => setAbierto(abierto === n.id ? null : n.id)}
+                          />
                         </GrupoAcciones>
                       </td>
+                      <td className={`${TD} font-mono text-xs`}>{codigoNegocio(n.id)}</td>
                       <td className={`${TD} font-medium`}>{n.nombre}</td>
                       <td className={TD}>{n.categoria}</td>
                       <td className={TD}>{n.distrito}</td>
                       <td className={`${TD} ${estado === "rechazado" ? "text-error" : ""}`}>
                         {estado === "rechazado" ? n.motivo_rechazo : n.direccion}
                       </td>
-                      {columnas === 6 && (
+                      {columnas === 7 && (
                         <td className={TD}>
                           <Decision
                             n={n}

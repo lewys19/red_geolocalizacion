@@ -16,10 +16,20 @@ class SeguirOut(BaseModel):
 
 
 class RelacionOut(BaseModel):
-    """Qué es quien mira para este negocio: si lo sigue y si puede editarlo."""
+    """Qué es quien mira para este negocio: si lo sigue, si le dio «me gusta» y si puede editarlo (su dueño)."""
 
     lo_sigo: bool
+    me_gusta: bool
     es_miembro: bool
+
+
+class MeGustaOut(BaseModel):
+    me_gusta: bool
+    total: int  # «me gusta» de la página del negocio
+
+
+class CompartidoOut(BaseModel):
+    compartidos: int
 
 
 class ReaccionIn(BaseModel):

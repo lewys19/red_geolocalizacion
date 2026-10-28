@@ -6,7 +6,8 @@ from app.almacen import Almacen, obtener_almacen
 from app.api.deps import Db, UsuarioActual, UsuarioOpcional
 from app.core.config import settings
 from app.core.errores import ErrorNegocio
-from app.schemas.publicacion import MuroOut, NegocioMini, PublicacionOut
+from app.schemas.publicacion import MuroOut, NegocioMini, PublicacionCambios, PublicacionOut
+from app.schemas.social import CompartidoOut
 from app.services import publicaciones
 
 router = APIRouter(tags=["Inicio"])
@@ -40,6 +41,20 @@ async def publicar(
             raise ErrorNegocio(status.HTTP_413_CONTENT_TOO_LARGE, f"Una foto pesa más de {settings.MAX_MB_FOTO} MB.")
         contenidos.append(datos)
     return publicaciones.crear(db, almacen, usuario, negocio_id, texto, contenidos)
+
+
+@router.patch("/negocios/{negocio_id}/publicaciones/{publicacion_id}", response_model=PublicacionOut)
+def editar(
+    negocio_id: int, publicacion_id: int, cambios: PublicacionCambios, usuario: UsuarioActual, db: Db, almacen: AlmacenFotos
+) -> PublicacionOut:
+    """El dueño cambia el texto de su publicación; queda marcada como editada."""
+    return publicaciones.editar(db, almacen, usuario, negocio_id, publicacion_id, cambios.texto)
+
+
+@router.post("/publicaciones/{publicacion_id}/compartido", response_model=CompartidoOut)
+def compartido(publicacion_id: int, db: Db) -> CompartidoOut:
+    """La web lo llama al tocar «Compartir». Sin sesión: también comparte quien no tiene cuenta."""
+    return CompartidoOut(compartidos=publicaciones.contar_compartido(db, publicacion_id))
 
 
 @router.delete("/negocios/{negocio_id}/publicaciones/{publicacion_id}", status_code=status.HTTP_204_NO_CONTENT)

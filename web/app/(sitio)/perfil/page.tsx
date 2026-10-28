@@ -13,14 +13,13 @@ import { PanelFotos } from "@/components/PanelFotos";
 import { SelectorPin } from "@/components/SelectorPin";
 import { BotonAcceso } from "@/components/VentanaAcceso";
 import { ErrorApi, pedir } from "@/lib/api";
-import { fecha } from "@/lib/formato";
+import { codigoNegocio, codigoUsuario, fecha } from "@/lib/formato";
 import { textoBusqueda, useDireccionDelPin, useUbicarDireccion } from "@/lib/direcciones";
 import { revisarFormulario } from "@/lib/formularios";
 import { LIMA } from "@/lib/mapaBase";
 import { guardarSesion, leerSesion } from "@/lib/sesion";
 import type { Catalogo, EstadoNegocio, NegocioDetalle, Yo } from "@/lib/tipos";
 import { useSesion } from "@/lib/usarSesion";
-
 
 const ESTADO: Record<EstadoNegocio, string> = {
   pendiente: "En revisión (aún no sale en el mapa)",
@@ -30,7 +29,8 @@ const ESTADO: Record<EstadoNegocio, string> = {
 };
 
 const ENTRADA = "w-full rounded border border-borde bg-superficie px-2 py-1.5 text-sm";
-const BOTON = "rounded bg-marca px-4 py-2 text-sm font-semibold text-sobre-marca hover:bg-marca-fuerte disabled:opacity-60";
+const BOTON =
+  "rounded bg-marca px-4 py-2 text-sm font-semibold text-sobre-marca hover:bg-marca-fuerte disabled:opacity-60";
 
 function Tabla({ titulo, children }: { titulo: string; children: ReactNode }) {
   return (
@@ -170,12 +170,29 @@ function MisDatos({ yo, alGuardar }: { yo: Yo; alGuardar: (y: Yo) => void }) {
             Ver mi perfil público
           </Link>
         </Fila>
+        <Fila etiqueta="Código de usuario">
+          <span className="font-mono">{codigoUsuario(yo.id)}</span>
+          <span className="ml-2 text-xs text-texto-2">(se asignó al registrarte y no cambia)</span>
+        </Fila>
         <Fila etiqueta="Correo">{yo.email}</Fila>
         <Fila etiqueta="Nombre">
-          <input className={ENTRADA} required minLength={2} maxLength={80} value={nombre} onChange={(e) => setNombre(e.target.value)} />
+          <input
+            className={ENTRADA}
+            required
+            minLength={2}
+            maxLength={80}
+            value={nombre}
+            onChange={(e) => setNombre(e.target.value)}
+          />
         </Fila>
         <Fila etiqueta="Celular">
-          <input className={ENTRADA} type="tel" placeholder="987 654 321" value={celular} onChange={(e) => setCelular(e.target.value)} />
+          <input
+            className={ENTRADA}
+            type="tel"
+            placeholder="987 654 321"
+            value={celular}
+            onChange={(e) => setCelular(e.target.value)}
+          />
         </Fila>
         <Fila etiqueta="Rol">
           {yo.rol_panel ?? "Cliente"}
@@ -210,10 +227,18 @@ function aDatos(n: NegocioDetalle): DatosNegocio {
 }
 
 /** Datos del negocio. Sin `negocio` es el formulario para crearlo. */
-function DatosDelNegocio({ negocio, alGuardar }: { negocio: NegocioDetalle | null; alGuardar: (n: NegocioDetalle) => void }) {
+function DatosDelNegocio({
+  negocio,
+  alGuardar,
+}: {
+  negocio: NegocioDetalle | null;
+  alGuardar: (n: NegocioDetalle) => void;
+}) {
   const { categorias, distritos } = useListas();
   const [datos, setDatos] = useState<DatosNegocio>(negocio ? aDatos(negocio) : DATOS_VACIOS);
-  const [pin, setPin] = useState<[number, number]>(negocio?.ubicacion ? [negocio.ubicacion.lng, negocio.ubicacion.lat] : LIMA);
+  const [pin, setPin] = useState<[number, number]>(
+    negocio?.ubicacion ? [negocio.ubicacion.lng, negocio.ubicacion.lat] : LIMA,
+  );
   // true cuando el dueño movió el pin a mano: entonces se sugiere la dirección de ese punto.
   const [pinMovido, setPinMovido] = useState(false);
   // Pin → dirección: si todavía no escribió, se completa sola; si ya escribió, se ofrece abajo del campo.
@@ -275,6 +300,11 @@ function DatosDelNegocio({ negocio, alGuardar }: { negocio: NegocioDetalle | nul
     <form onSubmit={guardar} noValidate>
       <Tabla titulo={negocio ? "Datos del negocio" : "Registrar mi negocio"}>
         {negocio && (
+          <Fila etiqueta="Código del negocio">
+            <span className="font-mono">{codigoNegocio(negocio.id)}</span>
+          </Fila>
+        )}
+        {negocio && (
           <Fila etiqueta="Estado">
             {ESTADO[negocio.estado]}
             {negocio.motivo_rechazo && <p className="text-error">Motivo: {negocio.motivo_rechazo}</p>}
@@ -309,7 +339,13 @@ function DatosDelNegocio({ negocio, alGuardar }: { negocio: NegocioDetalle | nul
           </select>
         </Fila>
         <Fila etiqueta="Descripción">
-          <textarea className={ENTRADA} rows={4} maxLength={1000} placeholder="Qué ofreces, especialidades…" {...campo("descripcion")} />
+          <textarea
+            className={ENTRADA}
+            rows={4}
+            maxLength={1000}
+            placeholder="Qué ofreces, especialidades…"
+            {...campo("descripcion")}
+          />
         </Fila>
         <Fila etiqueta="Distrito *">
           <select className={SELECT} required {...campo("distrito")}>
@@ -334,11 +370,16 @@ function DatosDelNegocio({ negocio, alGuardar }: { negocio: NegocioDetalle | nul
             <button
               type="button"
               onClick={() =>
-                setDatos({ ...datos, direccion: sugerencia.direccion ?? datos.direccion, distrito: sugerencia.distrito ?? datos.distrito })
+                setDatos({
+                  ...datos,
+                  direccion: sugerencia.direccion ?? datos.direccion,
+                  distrito: sugerencia.distrito ?? datos.distrito,
+                })
               }
               className="mt-1 w-full rounded border border-dashed border-marca bg-marca-suave px-2 py-1.5 text-left text-xs text-marca-fuerte"
             >
-              Según el pin: <strong>{[sugerencia.direccion, sugerencia.distrito].filter(Boolean).join(", ")}</strong> — usar esta
+              Según el pin: <strong>{[sugerencia.direccion, sugerencia.distrito].filter(Boolean).join(", ")}</strong> —
+              usar esta
             </button>
           )}
         </Fila>
@@ -429,7 +470,11 @@ function FilaImagen({
         <img
           src={url}
           alt={tipo === "logo" ? "Foto de perfil" : "Portada"}
-          className={tipo === "logo" ? "h-24 w-24 rounded-full object-cover" : "aspect-[3/1] w-full max-w-md rounded object-cover"}
+          className={
+            tipo === "logo"
+              ? "h-24 w-24 rounded-full object-cover"
+              : "aspect-[3/1] w-full max-w-md rounded object-cover"
+          }
         />
       ) : (
         <p className="text-texto-2">Sin {tipo === "logo" ? "foto de perfil" : "portada"}.</p>
@@ -449,7 +494,11 @@ function FilaImagen({
           />
         </label>
         {url && (
-          <button type="button" onClick={() => cambiar(null)} className="rounded border border-borde px-3 py-2 text-sm hover:border-error hover:text-error">
+          <button
+            type="button"
+            onClick={() => cambiar(null)}
+            className="rounded border border-borde px-3 py-2 text-sm hover:border-error hover:text-error"
+          >
             Quitar
           </button>
         )}
@@ -472,7 +521,12 @@ function ImagenesDelNegocio({ negocioId }: { negocioId: number }) {
   return (
     <>
       <Tabla titulo="Imágenes del negocio">
-        <FilaImagen negocioId={negocioId} tipo="logo" url={catalogo.logo} alCambiar={(logo) => setCatalogo({ ...catalogo, logo })} />
+        <FilaImagen
+          negocioId={negocioId}
+          tipo="logo"
+          url={catalogo.logo}
+          alCambiar={(logo) => setCatalogo({ ...catalogo, logo })}
+        />
         <FilaImagen
           negocioId={negocioId}
           tipo="portada"
@@ -482,7 +536,11 @@ function ImagenesDelNegocio({ negocioId }: { negocioId: number }) {
       </Tabla>
       <section className="mt-6">
         <h2 className="mb-2 text-lg font-bold">Galería de fotos ({catalogo.fotos.length})</h2>
-        <PanelFotos negocioId={negocioId} fotos={catalogo.fotos} alCambiar={(fotos) => setCatalogo({ ...catalogo, fotos })} />
+        <PanelFotos
+          negocioId={negocioId}
+          fotos={catalogo.fotos}
+          alCambiar={(fotos) => setCatalogo({ ...catalogo, fotos })}
+        />
       </section>
     </>
   );
@@ -600,7 +658,11 @@ export default function MiPerfil() {
       )}
 
       <div className="mt-10 flex flex-wrap gap-3 border-t border-borde pt-6">
-        <button type="button" onClick={salir} className="rounded border border-borde px-4 py-2 text-sm font-medium hover:border-marca">
+        <button
+          type="button"
+          onClick={salir}
+          className="rounded border border-borde px-4 py-2 text-sm font-medium hover:border-marca"
+        >
           Cerrar sesión
         </button>
         <button type="button" onClick={eliminar} className="px-4 py-2 text-sm text-error hover:underline">

@@ -148,6 +148,7 @@ def ficha(db: Session, almacen: Almacen, slug: str) -> FichaOut:
         portada=almacen.url(negocio.portada_clave) if negocio.portada_clave else None,
         seguidores=social.contar_seguidores(db, negocio.id),
         total_reacciones=social.total_reacciones_del_negocio(db, negocio.id),
+        total_me_gusta=social.contar_me_gusta(db, negocio.id),
         total_publicaciones=db.scalar(
             select(func.count()).select_from(Publicacion).where(Publicacion.negocio_id == negocio.id)
         )

@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from sqlalchemy import DateTime, ForeignKey, SmallInteger, String, Text, func
+from sqlalchemy import DateTime, ForeignKey, Integer, SmallInteger, String, Text, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.core.database import Base
@@ -17,6 +17,9 @@ class Publicacion(Base):
     autor_id: Mapped[int | None] = mapped_column(ForeignKey("usuarios.id", ondelete="SET NULL"))
     texto: Mapped[str] = mapped_column(Text)
     creado_en: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now(), index=True)
+    editado_en: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))  # se muestra «(editado)»
+    # Veces que se tocó «Compartir» (se cuenta el intento: el navegador no avisa si de verdad se envió).
+    compartidos: Mapped[int] = mapped_column(Integer, default=0, server_default="0")
 
     fotos: Mapped[list["FotoPublicacion"]] = relationship(
         cascade="all, delete-orphan", order_by="FotoPublicacion.orden"

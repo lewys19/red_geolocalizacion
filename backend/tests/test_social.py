@@ -53,7 +53,7 @@ def test_seguir_y_dejar_de_seguir(client: TestClient, registrar: Callable[..., d
     n = _negocio(client, db, ana)
     beto = registrar("beto@example.com")
     assert client.get(f"{API}/negocios/{n['id']}/relacion", headers=cabeceras(beto)).json() == {
-        "lo_sigo": False, "es_miembro": False}  # fmt: skip
+        "lo_sigo": False, "me_gusta": False, "es_miembro": False}  # fmt: skip
     for _ in range(2):  # seguir dos veces no suma dos
         r = client.put(f"{API}/negocios/{n['id']}/seguir", headers=cabeceras(beto))
         assert r.json() == {"seguidores": 1, "lo_sigo": True}
@@ -111,3 +111,37 @@ def test_comentarios_y_quien_puede_borrarlos(client: TestClient, registrar: Call
     otro = client.post(f"{API}/publicaciones/{pid}/comentarios", json={"texto": "spam"}, headers=cabeceras(caro)).json()
     assert client.delete(f"{API}/publicaciones/{pid}/comentarios/{otro['id']}", headers=cabeceras(ana)).status_code == 204
     assert client.get(f"{API}/publicaciones/{pid}/comentarios").json()["total"] == 1
+
+
+def test_me_gusta_de_la_pagina(client: TestClient, registrar: Callable[..., dict], db: Session) -> None:
+    dueno = registrar("dueno@example.com")
+    n = _negocio(client, db, dueno)
+    ana = registrar()
+    ruta = f"{API}/negocios/{n['id']}/me-gusta"
+    assert client.put(ruta).status_code == 401
+    for _ in range(2):  # dos veces: sigue contando 1
+        r = client.put(ruta, headers=cabeceras(ana))
+        assert r.json() == {"me_gusta": True, "total": 1}
+    assert client.get(f"{API}/negocios/{n['id']}/relacion", headers=cabeceras(ana)).json()["me_gusta"] is True
+    assert client.get(f"{API}/negocios/ficha/{n['slug']}").json()["total_me_gusta"] == 1
+    assert client.delete(ruta, headers=cabeceras(ana)).json() == {"me_gusta": False, "total": 0}
+
+
+def test_editar_publicacion_y_compartidos(client: TestClient, registrar: Callable[..., dict], db: Session) -> None:
+    dueno = registrar("dueno@example.com")
+    n = _negocio(client, db, dueno)
+    p = _publicar(client, dueno, n["id"], "Ceviche a S/ 25").json()
+    assert p["es_mia"] is True and p["editado_en"] is None and p["compartidos"] == 0
+    ruta = f"{API}/negocios/{n['id']}/publicaciones/{p['id']}"
+    intruso = registrar("intruso@example.com")
+    assert client.patch(ruta, json={"texto": "Hackeado"}, headers=cabeceras(intruso)).status_code == 404
+    r = client.patch(ruta, json={"texto": "Ceviche a S/ 22, solo hoy"}, headers=cabeceras(dueno))
+    assert r.status_code == 200, r.text
+    assert r.json()["texto"] == "Ceviche a S/ 22, solo hoy" and r.json()["editado_en"]
+    # En el muro: el dueño la ve como suya; otro no.
+    muro = f"{API}/negocios/ficha/{n['slug']}/publicaciones"
+    assert client.get(muro, headers=cabeceras(dueno)).json()["publicaciones"][0]["es_mia"] is True
+    assert client.get(muro, headers=cabeceras(intruso)).json()["publicaciones"][0]["es_mia"] is False
+    assert client.post(f"{API}/publicaciones/{p['id']}/compartido").json() == {"compartidos": 1}
+    assert client.post(f"{API}/publicaciones/{p['id']}/compartido").json() == {"compartidos": 2}
+    assert client.post(f"{API}/publicaciones/999999/compartido").status_code == 404
