@@ -8,7 +8,7 @@ function sesion(acceso: string, refresco: string): Sesion {
     token_acceso: acceso,
     token_refresco: refresco,
     acceso_expira_en: "2030-01-01T00:00:00Z",
-    usuario: { id: 1, email: "ana@example.com", nombre: "Ana", rol: "cliente" },
+    usuario: { id: 1, email: "ana@example.com", username: "ana", nombre: "Ana", rol: "cliente" },
   };
 }
 

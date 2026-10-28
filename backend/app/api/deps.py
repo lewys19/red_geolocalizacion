@@ -2,7 +2,7 @@
 
 - `get_db` abre una sesión de base de datos por petición y la cierra al terminar.
 - `usuario_actual` exige el token de acceso (Authorization: Bearer ...).
-- `requiere_rol(...)` exige además un rol de plataforma (operador, superadmin).
+- `requiere_permiso(...)` exige un permiso del panel administrativo (ver app.core.permisos).
 """
 
 from collections.abc import Callable, Generator
@@ -14,7 +14,7 @@ from sqlalchemy.orm import Session
 
 from app.core.database import SessionLocal
 from app.core.security import leer_token_acceso
-from app.models import RolPlataforma, Usuario
+from app.models import Usuario
 
 
 def get_db() -> Generator[Session, None, None]:
@@ -60,16 +60,31 @@ def usuario_opcional(
 UsuarioOpcional = Annotated[Usuario | None, Depends(usuario_opcional)]
 
 
-def requiere_rol(*roles: RolPlataforma) -> Callable[[Usuario], Usuario]:
-    """El superadmin pasa siempre; el resto, solo si su rol está en la lista."""
+def miembro_panel(usuario: UsuarioActual) -> Usuario:
+    """Administrador o cualquiera con rol de panel. Los clientes no entran."""
+    if not usuario.en_panel:
+        raise HTTPException(status.HTTP_403_FORBIDDEN, "Tu cuenta no tiene acceso al panel.")
+    return usuario
+
+
+MiembroPanel = Annotated[Usuario, Depends(miembro_panel)]
+
+
+def requiere_permiso(permiso: str) -> Callable[[Usuario], Usuario]:
+    """El administrador pasa siempre; el resto, si su rol de panel tiene el permiso."""
 
     def verificar(usuario: UsuarioActual) -> Usuario:
-        if usuario.rol != RolPlataforma.SUPERADMIN and usuario.rol not in roles:
+        if not usuario.puede(permiso):
             raise HTTPException(status.HTTP_403_FORBIDDEN, "No tienes permiso para esta acción.")
         return usuario
 
     return verificar
 
 
-Operador = Annotated[Usuario, Depends(requiere_rol(RolPlataforma.OPERADOR))]
-Superadmin = Annotated[Usuario, Depends(requiere_rol())]
+VerUsuarios = Annotated[Usuario, Depends(requiere_permiso("usuarios.ver"))]
+EditarUsuarios = Annotated[Usuario, Depends(requiere_permiso("usuarios.editar"))]
+EliminarUsuarios = Annotated[Usuario, Depends(requiere_permiso("usuarios.eliminar"))]
+VerNegocios = Annotated[Usuario, Depends(requiere_permiso("negocios.ver"))]
+ModerarNegocios = Annotated[Usuario, Depends(requiere_permiso("negocios.moderar"))]
+GestionarCategorias = Annotated[Usuario, Depends(requiere_permiso("categorias.gestionar"))]
+GestionarRoles = Annotated[Usuario, Depends(requiere_permiso("roles.gestionar"))]

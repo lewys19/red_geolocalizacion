@@ -27,13 +27,17 @@ from app.main import app  # noqa: E402
 
 Cabeceras = dict[str, str]
 
+# Roles de panel que crea la migración 0008.
+SUBADMINISTRADOR = 1
+SUSCRIPTOR = 2
+
 URL_PRUEBAS = make_url(os.environ.get("DATABASE_URL_PRUEBAS") or settings.DATABASE_URL).set(
     database="altoque_pruebas"
 )
 # Tablas que se vacían entre pruebas (las categorías vienen de la migración y se conservan).
 TABLAS_DE_DATOS = (
     "comentarios, reacciones, seguidores, fotos_publicacion, publicaciones, fotos, productos, horarios, "
-    "miembros_negocio, negocios, cuentas_externas, tokens_refresco, usuarios"
+    "negocios, cuentas_externas, tokens_refresco, usuarios"
 )
 
 
@@ -61,6 +65,8 @@ def engine() -> Generator[Engine, None, None]:
 def session_factory(engine: Engine) -> sessionmaker[Session]:
     with engine.begin() as conexion:
         conexion.execute(text(f"TRUNCATE {TABLAS_DE_DATOS} RESTART IDENTITY CASCADE"))
+        # Los roles de panel de la migración (1 Subadministrador, 2 Suscriptor) se conservan; los demás, no.
+        conexion.execute(text("DELETE FROM roles_panel WHERE id > 2"))
     return sessionmaker(bind=engine, autoflush=False, autocommit=False)
 
 

@@ -46,6 +46,16 @@ export function SelectorPin({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // Si el pin cambia desde afuera (p. ej. se ubicó la dirección escrita), el mapa va hacia él.
+  useEffect(() => {
+    const pin = pinRef.current;
+    if (!pin) return;
+    const { lng, lat } = pin.getLngLat();
+    if (Math.abs(lng - valor[0]) < 1e-7 && Math.abs(lat - valor[1]) < 1e-7) return;
+    pin.setLngLat(valor);
+    mapaRef.current?.flyTo({ center: valor, zoom: 17 });
+  }, [valor]);
+
   function usarMiUbicacion() {
     if (!navigator.geolocation) {
       setAviso("Tu navegador no permite obtener la ubicación.");

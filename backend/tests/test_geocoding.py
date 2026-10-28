@@ -8,10 +8,10 @@ from fastapi.testclient import TestClient
 
 from app.core.config import settings
 from app.geocoding import obtener_geocodificador
-from app.geocoding.base import DireccionSugerida
+from app.geocoding.base import DireccionSugerida, LugarEncontrado
 from app.geocoding.cache import ConCacheYRitmo
 from app.geocoding.distritos import distrito_de
-from app.geocoding.nominatim import interpretar
+from app.geocoding.nominatim import interpretar, interpretar_busqueda
 from app.main import app
 from tests.conftest import cabeceras
 
@@ -33,6 +33,12 @@ class Contador:
     def inverso(self, lng: float, lat: float) -> DireccionSugerida | None:
         self.llamadas += 1
         return DireccionSugerida(direccion="Av. Falsa 123", distrito="Lince", completa="Av. Falsa 123, Lince")
+
+    def directo(self, texto: str) -> LugarEncontrado | None:
+        self.llamadas += 1
+        if "nada" in texto:
+            return None
+        return LugarEncontrado(-77.036, -12.085, self.inverso(-77.036, -12.085))  # type: ignore[arg-type]
 
 
 def test_interpretar_respuesta_de_nominatim() -> None:
@@ -79,3 +85,32 @@ def test_endpoint_usa_la_estrategia_configurada(client: TestClient, registrar: C
         assert fuera.status_code == 400
     finally:
         app.dependency_overrides.pop(obtener_geocodificador, None)
+
+
+def test_interpretar_busqueda_de_nominatim() -> None:
+    lugar = interpretar_busqueda({**NOMINATIM_PARDO, "lat": "-12.1203", "lon": "-77.0335"})
+    assert lugar is not None
+    assert (lugar.lng, lugar.lat, lugar.sugerencia.distrito) == (-77.0335, -12.1203, "Miraflores")
+
+
+def test_buscar_direccion_devuelve_el_punto(client: TestClient, registrar: Callable[..., dict]) -> None:
+    falso = Contador()
+    app.dependency_overrides[obtener_geocodificador] = lambda: falso
+    h = cabeceras(registrar())
+    try:
+        r = client.get("/api/v1/geocoding/buscar", params={"direccion": "Av. Arequipa 2000", "distrito": "Lince"}, headers=h)
+        assert r.status_code == 200, r.text
+        assert r.json()["lng"] == -77.036 and r.json()["distrito"] == "Lince"
+        assert client.get("/api/v1/geocoding/buscar", params={"direccion": "nada aquí"}, headers=h).status_code == 404
+    finally:
+        app.dependency_overrides.pop(obtener_geocodificador, None)
+
+
+def test_cache_de_busqueda() -> None:
+    base = Contador()
+    cliente = redis.Redis.from_url(settings.REDIS_URL, db=15, decode_responses=True)
+    cliente.flushdb()
+    geo = ConCacheYRitmo(base, cliente, dias_cache=1)
+    assert geo.directo("Av. Arequipa 2000, Lince") == geo.directo("av. arequipa   2000, lince")
+    assert base.llamadas == 2  # la búsqueda (1) + el inverso que arma la respuesta falsa (1); la segunda vino de caché
+    cliente.flushdb()

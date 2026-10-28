@@ -112,7 +112,7 @@ export interface NegocioDetalle extends Negocio {
   telefono: string | null;
   whatsapp: string | null;
   tiene_delivery: boolean;
-  mi_rol: "propietario" | "editor" | null;
+  es_mio: boolean;
 }
 
 export interface Catalogo {
@@ -169,4 +169,103 @@ export interface Comentarios {
 export interface Muro {
   publicaciones: Publicacion[];
   siguiente: number | null;
+}
+
+/** Cuenta propia (GET /yo). */
+export interface Yo {
+  id: number;
+  username: string;
+  nombre: string;
+  avatar: string | null;
+  email: string;
+  telefono: string | null;
+  rol: "cliente" | "superadmin";
+  creado_en: string;
+  negocios: { negocio_id: number; negocio_nombre: string }[];
+  en_panel: boolean;
+  es_negocio: boolean;
+  es_operador: boolean;
+  es_superadmin: boolean;
+  /** «Administrador», «Subadministrador»… o null si no entra al panel. */
+  rol_panel: string | null;
+  permisos: string[];
+}
+
+/** Negocio completo, con imágenes, tal como lo ve el equipo de Altoque. */
+export interface NegocioAdmin extends NegocioDetalle {
+  logo: string | null;
+  portada: string | null;
+  fotos: Foto[];
+}
+
+/** Una fila de la tabla de usuarios del panel. */
+export interface UsuarioFila {
+  id: number;
+  email: string;
+  username: string;
+  nombre: string;
+  telefono: string | null;
+  rol: "cliente" | "superadmin";
+  rol_panel: { id: number; nombre: string } | null;
+  creado_en: string;
+  negocios: number;
+}
+
+export interface PaginaUsuarios {
+  total: number;
+  pagina: number;
+  por_pagina: number;
+  usuarios: UsuarioFila[];
+}
+
+/** Ficha de un usuario en el panel: sus datos y sus negocios completos. */
+export interface UsuarioAdmin extends Omit<UsuarioFila, "negocios"> {
+  negocios: NegocioAdmin[];
+}
+
+export interface ResumenAdmin {
+  usuarios: number;
+  usuarios_nuevos_7d: number;
+  usuarios_con_negocio: number;
+  usuarios_sin_negocio: number;
+  negocios: number;
+  negocios_por_estado: Record<EstadoNegocio, number>;
+  categorias: number;
+  por_categoria: { categoria: string; negocios: number }[];
+  equipo: number;
+}
+
+export interface Permiso {
+  clave: string;
+  texto: string;
+}
+
+export interface RolPanel {
+  id: number;
+  nombre: string;
+  descripcion: string | null;
+  permisos: string[];
+  usuarios: number;
+}
+
+/** Perfil público (/{username}). */
+export interface PerfilPublico {
+  username: string;
+  nombre: string;
+  avatar: string | null;
+  creado_en: string;
+  negocios: { nombre: string; slug: string; categoria: string; distrito: string; logo: string | null }[];
+}
+
+/** Una fila de la tabla de categorías del panel. */
+export interface CategoriaAdmin {
+  id: number;
+  nombre: string;
+  slug: string;
+  icono: string | null;
+  orden: number;
+  padre_id: number | null;
+  padre: string | null;
+  hijas: number;
+  negocios: number;
 }

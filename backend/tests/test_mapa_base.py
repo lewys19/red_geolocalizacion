@@ -6,7 +6,8 @@ from shapely.geometry import Point
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
-from app.models import Categoria, Negocio
+from app.core.fechas import ahora
+from app.models import Categoria, Negocio, Usuario
 
 
 def test_categorias_en_arbol(client: TestClient) -> None:
@@ -21,9 +22,13 @@ def test_categorias_en_arbol(client: TestClient) -> None:
 def test_postgis_encuentra_lo_cercano(db: Session) -> None:
     polleria = db.scalar(select(Categoria).where(Categoria.slug == "pollerias"))
     assert polleria is not None
+    dueno = Usuario(email="d@example.com", username="dueno", nombre="Dueño", hash_contrasena="x", acepto_terminos_en=ahora())
+    db.add(dueno)
+    db.flush()
 
     def negocio(nombre: str, lng: float, lat: float) -> Negocio:
         return Negocio(
+            usuario_id=dueno.id,
             nombre=nombre,
             slug=nombre.lower().replace(" ", "-"),
             categoria_id=polleria.id,

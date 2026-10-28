@@ -5,7 +5,7 @@ from typing import Annotated
 from pydantic import AfterValidator, BaseModel, Field, StringConstraints, model_validator
 
 from app.core.geo import DISTRITOS, dentro_del_piloto
-from app.models import EstadoNegocio, RolMiembro
+from app.models import EstadoNegocio
 
 Texto = Annotated[str, StringConstraints(strip_whitespace=True)]
 
@@ -108,7 +108,7 @@ class NegocioOut(BaseModel):
     estado: EstadoNegocio
     motivo_rechazo: str | None
     horarios: list[HorarioOut]
-    mi_rol: RolMiembro | None = None
+    es_mio: bool = False  # lo ve su dueño (en el panel, false)
 
 
 class RechazoIn(BaseModel):
@@ -146,6 +146,14 @@ class MapaOut(BaseModel):
     total: int
     puntos: list[PuntoMapa]
     grupos: list[GrupoMapa]
+
+
+class LugarOut(BaseModel):
+    lng: float
+    lat: float
+    direccion: str | None
+    distrito: str | None
+    completa: str
 
 
 class DireccionSugeridaOut(BaseModel):

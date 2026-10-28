@@ -5,7 +5,7 @@ from sqlalchemy import Boolean, DateTime, ForeignKey, Index, Numeric, String, Te
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.core.database import Base
-from app.models.enums import EstadoNegocio, RolMiembro, tipo_enum
+from app.models.enums import EstadoNegocio, tipo_enum
 
 
 class Negocio(Base):
@@ -23,6 +23,8 @@ class Negocio(Base):
     )
 
     id: Mapped[int] = mapped_column(primary_key=True)
+    # Dueño: el negocio depende del usuario (un usuario, 0..N negocios). "Tiene negocio" se calcula, no se guarda.
+    usuario_id: Mapped[int] = mapped_column(ForeignKey("usuarios.id", ondelete="RESTRICT"), index=True)
     nombre: Mapped[str] = mapped_column(String(120))
     slug: Mapped[str] = mapped_column(String(140), unique=True)
     descripcion: Mapped[str | None] = mapped_column(Text)
@@ -56,7 +58,7 @@ class Negocio(Base):
     eliminado_en: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
 
     categoria: Mapped["Categoria"] = relationship()  # noqa: F821
-    miembros: Mapped[list["MiembroNegocio"]] = relationship(back_populates="negocio")
+    dueno: Mapped["Usuario"] = relationship(back_populates="negocios")  # noqa: F821
     productos: Mapped[list["Producto"]] = relationship(  # noqa: F821
         cascade="all, delete-orphan", order_by="(Producto.orden, Producto.id)"
     )
@@ -65,17 +67,3 @@ class Negocio(Base):
         back_populates="negocio", cascade="all, delete-orphan", order_by="(Horario.dia_semana, Horario.abre)"
     )
 
-
-class MiembroNegocio(Base):
-    """Quién puede editar cada negocio. Un usuario puede tener varios negocios."""
-
-    __tablename__ = "miembros_negocio"
-
-    usuario_id: Mapped[int] = mapped_column(ForeignKey("usuarios.id", ondelete="CASCADE"), primary_key=True)
-    negocio_id: Mapped[int] = mapped_column(
-        ForeignKey("negocios.id", ondelete="CASCADE"), primary_key=True, index=True
-    )
-    rol: Mapped[RolMiembro] = mapped_column(tipo_enum(RolMiembro, "rol_miembro"))
-
-    usuario: Mapped["Usuario"] = relationship(back_populates="membresias")  # noqa: F821
-    negocio: Mapped[Negocio] = relationship(back_populates="miembros")

@@ -1,6 +1,6 @@
 "use client";
 
-// Formularios de ingreso y registro: los usa la ventana flotante y las páginas /ingresar y /registro.
+// Formularios de ingreso y registro: los usa la ventana flotante y las páginas /login y /registro.
 import { type FormEvent, useEffect, useState } from "react";
 
 import { ErrorApi, pedir } from "@/lib/api";
@@ -86,7 +86,6 @@ export function FormRegistro({ alEntrar }: { alEntrar: () => void }) {
         cuerpo: {
           email: datos.get("email"),
           nombre: datos.get("nombre"),
-          celular: datos.get("celular") || null,
           contrasena: datos.get("contrasena"),
           acepta_terminos: datos.get("acepta") === "on",
         },
@@ -103,20 +102,12 @@ export function FormRegistro({ alEntrar }: { alEntrar: () => void }) {
     <form onSubmit={enviar} className="space-y-3.5">
       <Campo etiqueta="Nombre" name="nombre" autoComplete="name" minLength={2} maxLength={80} autoFocus required />
       <Campo etiqueta="Correo" name="email" type="email" autoComplete="email" required />
-      <Campo
-        etiqueta="Celular (opcional, para ingresar con él)"
-        name="celular"
-        type="tel"
-        inputMode="tel"
-        autoComplete="tel-national"
-        placeholder="987 654 321"
-        pattern="[+\d\s\-]{9,16}"
-      />
+      {/* El celular (opcional) se agrega después en Mi perfil: registro corto, como pide la arquitectura. */}
       <CampoContrasena etiqueta="Contraseña (mínimo 8 caracteres)" nueva />
       {/* Ley 29733: consentimiento expreso, nunca marcado de antemano. */}
-      <label className="flex items-start gap-2 text-sm text-texto-2">
+      <label className="flex items-start gap-2 text-xs text-texto-2">
         <input type="checkbox" name="acepta" required className="mt-0.5 h-4 w-4 shrink-0 accent-[var(--marca)]" />
-        <span>Acepto los términos de uso y el tratamiento de mis datos personales según la política de privacidad.</span>
+        <span>Acepto los términos de uso y el tratamiento de mis datos según la política de privacidad.</span>
       </label>
       <MensajeError mensaje={error} />
       <Boton cargando={cargando}>Crear cuenta</Boton>
@@ -150,25 +141,9 @@ const EXTERNOS = [
       </svg>
     ),
   },
-  {
-    id: "microsoft",
-    texto: (
-      <>
-        Continuar con Hotmail<span className="hidden sm:inline">&nbsp;/ Outlook</span>
-      </>
-    ),
-    icono: (
-      <svg viewBox="0 0 21 21" className="h-5 w-5" aria-hidden="true">
-        <path fill="#F25022" d="M1 1h9v9H1z" />
-        <path fill="#7FBA00" d="M11 1h9v9h-9z" />
-        <path fill="#00A4EF" d="M1 11h9v9H1z" />
-        <path fill="#FFB900" d="M11 11h9v9h-9z" />
-      </svg>
-    ),
-  },
 ];
 
-/** Botones de Google y Microsoft. Llevan a su pantalla y vuelven a esta misma página. */
+/** Botón de Google (Microsoft queda en la API, sin botón por ahora). Lleva a su pantalla y vuelve a esta página. */
 export function BotonesExternos() {
   const [activos, setActivos] = useState<string[] | null>(null);
   useEffect(() => {
@@ -177,7 +152,7 @@ export function BotonesExternos() {
 
   function ir(id: string) {
     const volver = window.location.pathname + window.location.search;
-    // Es la API (que redirige a Google/Microsoft), no una página de Next: va con navegación completa.
+    // Es la API (que redirige a Google), no una página de Next: va con navegación completa.
     // eslint-disable-next-line @next/next/no-location-assign-relative-destination
     window.location.assign(`/api/v1/auth/externo/${id}?volver=${encodeURIComponent(volver)}`);
   }
@@ -193,7 +168,7 @@ export function BotonesExternos() {
             onClick={() => ir(e.id)}
             disabled={!listo}
             title={activos && !listo ? "Muy pronto" : undefined}
-            className="relative flex w-full items-center justify-center rounded-full bg-black/[0.05] px-12 py-3 text-sm font-semibold transition hover:bg-black/[0.09] disabled:cursor-not-allowed disabled:opacity-55 dark:bg-white/[0.08] dark:hover:bg-white/[0.13]"
+            className="relative flex w-full items-center justify-center rounded-full bg-black/[0.05] px-12 py-2.5 text-sm font-semibold transition hover:bg-black/[0.09] disabled:cursor-not-allowed disabled:opacity-55 dark:bg-white/[0.08] dark:hover:bg-white/[0.13]"
           >
             {/* Como en TikTok: ícono pegado a la izquierda, texto al centro. */}
             <span className="absolute left-4">{e.icono}</span>
@@ -208,7 +183,7 @@ export function BotonesExternos() {
 
 export function Separador() {
   return (
-    <div className="my-5 flex items-center gap-3 text-xs text-texto-2" aria-hidden="true">
+    <div className="my-3 flex items-center gap-3 text-xs text-texto-2" aria-hidden="true">
       <span className="h-px flex-1 bg-borde" />o<span className="h-px flex-1 bg-borde" />
     </div>
   );

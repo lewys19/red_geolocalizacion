@@ -2,10 +2,11 @@ import { describe, expect, it } from "vitest";
 
 import { aCentimos } from "@/components/PanelCarta";
 
-import { aPie, distancia, enlaceComoLlegar, enlaceWhatsapp, hace, hora, hoyEnLima, precio } from "./formato";
+import { aPie, codigoUsuario, distancia, enlaceComoLlegar, enlaceWhatsapp, hace, hora, hoyEnLima, precio } from "./formato";
 import { circulo, limitesDelCirculo } from "./geo";
 
 describe("formato", () => {
+  it("arma el código del usuario", () => expect(codigoUsuario(1)).toBe("u00000001"));
   it("acorta la hora", () => expect(hora("23:00:00")).toBe("23:00"));
   it("muestra metros o kilómetros", () => {
     expect(distancia(656)).toBe("a 660 m");

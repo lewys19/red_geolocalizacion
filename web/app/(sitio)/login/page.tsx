@@ -1,6 +1,6 @@
 "use client";
 
-// Página para enlaces directos (/ingresar). Dentro de la web se usa la ventana flotante.
+// Página para enlaces directos (/login). Dentro de la web se usa la ventana flotante.
 import { useRouter } from "next/navigation";
 
 import { Tarjeta } from "@/components/Formulario";

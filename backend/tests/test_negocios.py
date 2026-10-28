@@ -3,8 +3,8 @@ from collections.abc import Callable
 from fastapi.testclient import TestClient
 from sqlalchemy.orm import Session
 
-from app.models import RolPlataforma, Usuario
-from tests.conftest import cabeceras, datos_negocio
+from app.models import Usuario
+from tests.conftest import SUBADMINISTRADOR, cabeceras, datos_negocio
 
 
 def _registrar_negocio(client: TestClient, sesion: dict, **cambios: object) -> dict:
@@ -17,7 +17,7 @@ def _operador(db: Session, registrar: Callable[..., dict]) -> dict:
     sesion = registrar("ope@example.com")
     usuario = db.get(Usuario, sesion["usuario"]["id"])
     assert usuario is not None
-    usuario.rol = RolPlataforma.OPERADOR
+    usuario.rol_panel_id = SUBADMINISTRADOR
     db.commit()
     return sesion
 
@@ -34,7 +34,7 @@ def test_registrar_negocio_queda_pendiente_y_me_hace_negocio(
     assert len(negocio["horarios"]) == 7
     yo = client.get("/api/v1/yo", headers=cabeceras(ana)).json()
     assert yo["es_negocio"] is True
-    assert yo["negocios"][0]["rol"] == "propietario"
+    assert yo["negocios"][0]["negocio_nombre"] == "Pollería El Buen Sabor"
 
 
 def test_slug_repetido_recibe_sufijo(client: TestClient, registrar: Callable[..., dict]) -> None:

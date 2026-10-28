@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useState, useSyncExternalStore } from "react";
 
 import { abrirAcceso } from "@/lib/acceso";
 import { conReintentos, pedir } from "@/lib/api";
@@ -16,7 +16,9 @@ type Modo = "general" | "radio";
 function Caja({ titulo, children }: { titulo: string; children: React.ReactNode }) {
   return (
     <section className="relative rounded-xl border border-borde bg-superficie p-3 pt-4">
-      <h2 className="absolute -top-2.5 left-3 rounded-full bg-fondo px-2 text-xs font-semibold text-texto-2">{titulo}</h2>
+      <h2 className="absolute -top-2.5 left-3 rounded-full bg-fondo px-2 text-xs font-semibold text-texto-2">
+        {titulo}
+      </h2>
       {children}
     </section>
   );
@@ -49,11 +51,23 @@ function PanelIzquierdo({
         <fieldset className="space-y-2 text-sm">
           <legend className="sr-only">Qué publicaciones ver</legend>
           <label className="flex items-center gap-2">
-            <input type="radio" name="modo" checked={modo === "general"} onChange={() => alCambiarModo("general")} className="accent-[var(--marca)]" />
+            <input
+              type="radio"
+              name="modo"
+              checked={modo === "general"}
+              onChange={() => alCambiarModo("general")}
+              className="accent-[var(--marca)]"
+            />
             General (toda Lima)
           </label>
           <label className="flex items-center gap-2">
-            <input type="radio" name="modo" checked={modo === "radio"} onChange={elegirRadio} className="accent-[var(--marca)]" />
+            <input
+              type="radio"
+              name="modo"
+              checked={modo === "radio"}
+              onChange={elegirRadio}
+              className="accent-[var(--marca)]"
+            />
             Cerca de mí: {radioKm} km
           </label>
           <input
@@ -80,14 +94,14 @@ function PanelIzquierdo({
       {/* En el celular se oculta (por ahora solo dice «Pronto») para que el muro quede a la vista. */}
       <div className="hidden lg:block">
         <Caja titulo="Aprovecha">
-        <ul className="space-y-1.5 text-sm">
-          {["Referencias", "Notificaciones", "Ofertas"].map((t) => (
-            <li key={t} className="flex items-center justify-between text-texto-2">
-              <span>• {t}</span>
-              <span className="rounded-full bg-fondo px-2 py-0.5 text-[11px]">Pronto</span>
-            </li>
-          ))}
-        </ul>
+          <ul className="space-y-1.5 text-sm">
+            {["Referencias", "Notificaciones", "Ofertas"].map((t) => (
+              <li key={t} className="flex items-center justify-between text-texto-2">
+                <span>• {t}</span>
+                <span className="rounded-full bg-fondo px-2 py-0.5 text-[11px]">Pronto</span>
+              </li>
+            ))}
+          </ul>
         </Caja>
       </div>
 
@@ -107,31 +121,127 @@ function PanelIzquierdo({
   );
 }
 
-/** Círculos de arriba: negocios cercanos (o los más nuevos si no hay ubicación). */
+const CADA_MS = 10_000;
+const ANCHO_SM = "(min-width: 640px)";
+
+/** 6 círculos a la vista; en el celular, 4 (no entran más sin cortarse). */
+function useVisibles(): number {
+  return useSyncExternalStore(
+    (avisar) => {
+      const consulta = window.matchMedia(ANCHO_SM);
+      consulta.addEventListener("change", avisar);
+      return () => consulta.removeEventListener("change", avisar);
+    },
+    () => (window.matchMedia(ANCHO_SM).matches ? 6 : 4),
+    () => 6,
+  );
+}
+
+function Flecha({ lado, onClick }: { lado: "izquierda" | "derecha"; onClick: () => void }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-label={lado === "izquierda" ? "Anteriores" : "Siguientes"}
+      className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-borde bg-superficie text-texto-2 shadow-sm hover:border-marca hover:text-marca-fuerte"
+    >
+      <svg viewBox="0 0 24 24" className="h-4 w-4" aria-hidden="true">
+        <path
+          d={lado === "izquierda" ? "M15 5 8 12l7 7" : "m9 5 7 7-7 7"}
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2.5"
+        />
+      </svg>
+    </button>
+  );
+}
+
+/**
+ * Círculos de arriba (negocios cercanos, o los más nuevos sin ubicación) en carrusel:
+ * 6 a la vista (4 en el celular), flechas a los lados y avanza solo cada 10 s (se detiene mientras el mouse está encima).
+ */
 function Circulos({ desde }: { desde: [number, number] | null }) {
+  const VISIBLES = useVisibles();
   const [negocios, setNegocios] = useState<NegocioMini[]>([]);
+  const [inicio, setInicio] = useState(0);
+  const [pausado, setPausado] = useState(false);
+  // Cambia con cada clic en una flecha: reinicia la cuenta de 10 s.
+  const [vuelta, setVuelta] = useState(0);
+
   useEffect(() => {
-    const params = new URLSearchParams({ limite: "12" });
+    const params = new URLSearchParams({ limite: "18" });
     if (desde) {
       params.set("lng", desde[0].toFixed(5));
       params.set("lat", desde[1].toFixed(5));
     }
-    pedir<NegocioMini[]>(`/negocios/lista?${params}`).then(setNegocios).catch(() => setNegocios([]));
+    pedir<NegocioMini[]>(`/negocios/lista?${params}`)
+      .then((lista) => {
+        setNegocios(lista);
+        setInicio(0);
+      })
+      .catch(() => setNegocios([]));
   }, [desde]);
 
+  const ultimo = Math.max(0, negocios.length - VISIBLES);
+  const mover = useCallback(
+    (paso: number) => {
+      setInicio((i) => {
+        const max = Math.max(0, negocios.length - VISIBLES);
+        if (paso > 0) return i >= max ? 0 : i + 1;
+        return i <= 0 ? max : i - 1;
+      });
+    },
+    [negocios.length, VISIBLES],
+  );
+
+  useEffect(() => {
+    if (pausado || ultimo === 0) return;
+    const reloj = setInterval(() => mover(1), CADA_MS);
+    return () => clearInterval(reloj);
+  }, [pausado, ultimo, mover, vuelta]);
+
   if (!negocios.length) return null;
+  const conFlechas = ultimo > 0;
+  const flecha = (paso: number) => () => {
+    mover(paso);
+    setVuelta((v) => v + 1);
+  };
+
   return (
-    <div className="-mx-1 flex gap-4 overflow-x-auto px-1 pb-2 [scrollbar-width:none]">
-      {negocios.map((n) => (
-        <Link key={n.id} href={`/n/${n.slug}`} className="flex w-20 shrink-0 flex-col items-center gap-1.5 text-center">
-          <span className="rounded-full bg-gradient-to-tr from-marca to-amber-400 p-[3px]">
-            <span className="block rounded-full bg-superficie p-[2px]">
-              <Avatar negocio={n} tamano="h-16 w-16 text-2xl" />
-            </span>
-          </span>
-          <span className="line-clamp-2 text-xs leading-tight">{n.nombre}</span>
-        </Link>
-      ))}
+    <div
+      className="flex items-center justify-center gap-2"
+      onMouseEnter={() => setPausado(true)}
+      onMouseLeave={() => setPausado(false)}
+      role="region"
+      aria-roledescription="carrusel"
+      aria-label="Negocios"
+    >
+      {conFlechas && <Flecha lado="izquierda" onClick={flecha(-1)} />}
+      <div className="min-w-0 flex-1 overflow-hidden">
+        <div
+          className="flex transition-transform duration-500 ease-out"
+          style={{ transform: `translateX(-${(inicio * 100) / VISIBLES}%)` }}
+        >
+          {negocios.map((n, i) => (
+            <Link
+              key={n.id}
+              href={`/n/${n.slug}`}
+              tabIndex={i >= inicio && i < inicio + VISIBLES ? 0 : -1}
+              style={{ flexBasis: `${100 / VISIBLES}%` }}
+              className="flex shrink-0 flex-col items-center gap-1.5 px-1 text-center"
+            >
+              <span className="rounded-full bg-gradient-to-tr from-marca to-amber-400 p-[3px]">
+                <span className="block rounded-full bg-superficie p-[2px]">
+                  <Avatar negocio={n} tamano="h-11 w-11 text-lg sm:h-14 sm:w-14 sm:text-2xl" />
+                </span>
+              </span>
+              <span className="line-clamp-2 w-full text-[11px] leading-tight sm:text-xs">{n.nombre}</span>
+            </Link>
+          ))}
+        </div>
+      </div>
+      {conFlechas && <Flecha lado="derecha" onClick={flecha(1)} />}
     </div>
   );
 }
@@ -221,17 +331,26 @@ export function Inicio() {
         </div>
       </div>
 
-      <main className="min-w-0 space-y-4">
+      {/* La columna central ocupa el 90 % de su espacio, centrada: algo más angosta que las tarjetas laterales piden. */}
+      <main className="w-full min-w-0 space-y-4 lg:max-w-[90%] lg:justify-self-center">
         <Circulos desde={desde} />
-        {error && <p className="rounded-xl bg-error/10 p-3 text-sm text-error">No pudimos cargar el muro. Recarga la página.</p>}
+        {error && (
+          <p className="rounded-xl bg-error/10 p-3 text-sm text-error">No pudimos cargar el muro. Recarga la página.</p>
+        )}
         {publicaciones === null && !error && <p className="py-10 text-center text-texto-2">Cargando publicaciones…</p>}
         {publicaciones?.length === 0 && (
           <div className="rounded-2xl border border-borde bg-superficie p-8 text-center">
-            <p className="font-semibold">Todavía no hay publicaciones {modo === "radio" ? `a menos de ${radioKm} km` : ""}.</p>
-            <p className="mt-1 text-sm text-texto-2">Cuando los negocios publiquen ofertas y novedades, las verás aquí.</p>
+            <p className="font-semibold">
+              Todavía no hay publicaciones {modo === "radio" ? `a menos de ${radioKm} km` : ""}.
+            </p>
+            <p className="mt-1 text-sm text-texto-2">
+              Cuando los negocios publiquen ofertas y novedades, las verás aquí.
+            </p>
           </div>
         )}
-        {publicaciones?.map((p) => <TarjetaPublicacion key={p.id} publicacion={p} />)}
+        {publicaciones?.map((p) => (
+          <TarjetaPublicacion key={p.id} publicacion={p} />
+        ))}
         {siguiente && (
           <button
             type="button"

@@ -4,18 +4,10 @@ from typing import Annotated, Literal
 from pydantic import AliasChoices, BaseModel, EmailStr, Field, StringConstraints, field_validator
 
 from app.core.security import LARGO_MAXIMO_CONTRASENA
-from app.schemas.usuario import UsuarioOut
+from app.schemas.usuario import UsuarioOut, normalizar_celular
 
 Nombre = Annotated[str, StringConstraints(strip_whitespace=True, min_length=2, max_length=80)]
 Contrasena = Annotated[str, Field(min_length=8, max_length=LARGO_MAXIMO_CONTRASENA)]
-
-
-def normalizar_celular(valor: str) -> str | None:
-    """Celular peruano en 9 dígitos (987654321). Acepta espacios, guiones y el prefijo +51."""
-    digitos = "".join(c for c in valor if c.isdigit())
-    if len(digitos) == 11 and digitos.startswith("51"):
-        digitos = digitos[2:]
-    return digitos if len(digitos) == 9 and digitos.startswith("9") else None
 
 
 class RegistroIn(BaseModel):

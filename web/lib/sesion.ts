@@ -1,13 +1,16 @@
 // Sesión guardada en el navegador (localStorage) y avisos a la interfaz cuando cambia.
 // El token de acceso dura 30 min; el de refresco, 30 días (ver lib/api.ts).
 
-export type Rol = "cliente" | "operador" | "superadmin";
+export type Rol = "cliente" | "superadmin";
 
 export interface Usuario {
   id: number;
   email: string;
+  username: string;
   nombre: string;
   rol: Rol;
+  /** Tiene acceso al panel administrativo (sesiones guardadas antes de existir el campo: undefined). */
+  en_panel?: boolean;
 }
 
 export interface Sesion {

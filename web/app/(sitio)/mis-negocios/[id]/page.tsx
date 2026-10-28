@@ -65,7 +65,7 @@ export default function PanelNegocio({ params }: { params: Promise<{ id: string 
         <p className="text-center text-texto-2">
           {sesion ? "No encontramos este negocio en tu cuenta." : "Ingresa para administrar tu negocio."}{" "}
           {sesion ? (
-            <Link href="/cuenta" className="font-medium text-marca-fuerte underline">
+            <Link href="/perfil" className="font-medium text-marca-fuerte underline">
               Ver mis negocios
             </Link>
           ) : (
@@ -100,7 +100,7 @@ export default function PanelNegocio({ params }: { params: Promise<{ id: string 
 
   return (
     <div className="mx-auto w-full max-w-2xl px-4 py-6">
-      <Link href="/cuenta" className="text-sm text-texto-2 hover:text-texto">
+      <Link href="/perfil" className="text-sm text-texto-2 hover:text-texto">
         ← Mis negocios
       </Link>
       <div className="mt-2 flex flex-wrap items-center justify-between gap-2">

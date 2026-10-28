@@ -16,7 +16,7 @@ from app.schemas.catalogo import CatalogoOut, FichaOut, FotoOut, ProductoCambios
 from app.schemas.negocio import HorarioOut
 from app.services import imagenes, social
 from app.services.horarios import estado_atencion
-from app.services.negocios import exigir_miembro
+from app.services.negocios import exigir_dueno
 
 
 def producto_out(p: Producto) -> ProductoOut:
@@ -38,7 +38,7 @@ def foto_out(f: Foto, almacen: Almacen) -> FotoOut:
 
 
 def crear_producto(db: Session, usuario: Usuario, negocio_id: int, datos: ProductoIn) -> ProductoOut:
-    exigir_miembro(db, usuario, negocio_id)
+    exigir_dueno(db, usuario, negocio_id)
     cantidad = db.scalar(select(func.count()).select_from(Producto).where(Producto.negocio_id == negocio_id)) or 0
     if cantidad >= settings.MAX_PRODUCTOS_POR_NEGOCIO:
         raise ErrorNegocio(status.HTTP_400_BAD_REQUEST, f"Máximo {settings.MAX_PRODUCTOS_POR_NEGOCIO} productos.")
@@ -58,7 +58,7 @@ def _producto_de(db: Session, negocio_id: int, producto_id: int) -> Producto:
 def editar_producto(
     db: Session, usuario: Usuario, negocio_id: int, producto_id: int, cambios: ProductoCambios
 ) -> ProductoOut:
-    exigir_miembro(db, usuario, negocio_id)
+    exigir_dueno(db, usuario, negocio_id)
     producto = _producto_de(db, negocio_id, producto_id)
     datos = cambios.model_dump(exclude_unset=True)
     for campo, valor in datos.items():
@@ -70,7 +70,7 @@ def editar_producto(
 
 
 def borrar_producto(db: Session, usuario: Usuario, negocio_id: int, producto_id: int) -> None:
-    exigir_miembro(db, usuario, negocio_id)
+    exigir_dueno(db, usuario, negocio_id)
     db.delete(_producto_de(db, negocio_id, producto_id))
     db.commit()
 
@@ -79,7 +79,7 @@ def borrar_producto(db: Session, usuario: Usuario, negocio_id: int, producto_id:
 
 
 def subir_foto(db: Session, almacen: Almacen, usuario: Usuario, negocio_id: int, datos: bytes) -> FotoOut:
-    exigir_miembro(db, usuario, negocio_id)
+    exigir_dueno(db, usuario, negocio_id)
     cantidad = db.scalar(select(func.count()).select_from(Foto).where(Foto.negocio_id == negocio_id)) or 0
     if cantidad >= settings.MAX_FOTOS_POR_NEGOCIO:
         raise ErrorNegocio(status.HTTP_400_BAD_REQUEST, f"Máximo {settings.MAX_FOTOS_POR_NEGOCIO} fotos. Borra alguna.")
@@ -97,7 +97,7 @@ def subir_foto(db: Session, almacen: Almacen, usuario: Usuario, negocio_id: int,
 
 
 def borrar_foto(db: Session, almacen: Almacen, usuario: Usuario, negocio_id: int, foto_id: int) -> None:
-    exigir_miembro(db, usuario, negocio_id)
+    exigir_dueno(db, usuario, negocio_id)
     foto = db.get(Foto, foto_id)
     if foto is None or foto.negocio_id != negocio_id:
         raise ErrorNegocio(status.HTTP_404_NOT_FOUND, "Foto no encontrada.")
@@ -156,7 +156,7 @@ def ficha(db: Session, almacen: Almacen, slug: str) -> FichaOut:
 
 
 def catalogo_propio(db: Session, almacen: Almacen, usuario: Usuario, negocio_id: int) -> CatalogoOut:
-    exigir_miembro(db, usuario, negocio_id)
+    exigir_dueno(db, usuario, negocio_id)
     productos = db.scalars(
         select(Producto).where(Producto.negocio_id == negocio_id).order_by(Producto.orden, Producto.id)
     ).all()

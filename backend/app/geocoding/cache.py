@@ -8,11 +8,12 @@ Si Redis no responde, se consulta igual: es mejor que no tener sugerencia.
 
 import json
 import time
+from collections.abc import Callable
 from dataclasses import asdict
 
 import redis
 
-from app.geocoding.base import DireccionSugerida, ProveedorGeocoding
+from app.geocoding.base import DireccionSugerida, LugarEncontrado, ProveedorGeocoding
 
 
 class ConCacheYRitmo:
@@ -24,20 +25,33 @@ class ConCacheYRitmo:
 
     def inverso(self, lng: float, lat: float) -> DireccionSugerida | None:
         clave = f"geo:inverso:{self.nombre}:{lng:.5f},{lat:.5f}"
+        datos = self._con_cache(clave, lambda: self.proveedor.inverso(lng, lat))
+        return DireccionSugerida(**datos) if datos else None
+
+    def directo(self, texto: str) -> LugarEncontrado | None:
+        clave = f"geo:directo:{self.nombre}:{' '.join(texto.lower().split())}"
+        datos = self._con_cache(clave, lambda: self.proveedor.directo(texto))
+        if not datos:
+            return None
+        return LugarEncontrado(lng=datos["lng"], lat=datos["lat"], sugerencia=DireccionSugerida(**datos["sugerencia"]))
+
+    def _con_cache(self, clave: str, consultar: Callable[[], object]) -> dict | None:
+        """Lo guardado en Redis o, si no hay, la respuesta del proveedor (respetando el ritmo)."""
         try:
             guardado = self.redis.get(clave)
             if guardado is not None:
-                datos = json.loads(guardado)
-                return DireccionSugerida(**datos) if datos else None
+                return json.loads(guardado)
             self._esperar_turno()
         except redis.RedisError:
-            return self.proveedor.inverso(lng, lat)
-        resultado = self.proveedor.inverso(lng, lat)
+            resultado = consultar()
+            return asdict(resultado) if resultado else None  # type: ignore[call-overload]
+        resultado = consultar()
+        datos = asdict(resultado) if resultado else None  # type: ignore[call-overload]
         try:
-            self.redis.set(clave, json.dumps(asdict(resultado) if resultado else None), ex=self.segundos_cache)
+            self.redis.set(clave, json.dumps(datos), ex=self.segundos_cache)
         except redis.RedisError:
             pass
-        return resultado
+        return datos
 
     def _esperar_turno(self) -> None:
         """Toma el "turno" de este segundo; si otro proceso lo tiene, espera hasta 3 s."""

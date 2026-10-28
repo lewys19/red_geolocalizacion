@@ -4,6 +4,7 @@
 import { useEffect, useState } from "react";
 
 import { pedir } from "@/lib/api";
+import { textoBusqueda, useDireccionDelPin, useUbicarDireccion } from "@/lib/direcciones";
 import type { Categoria } from "@/lib/tipos";
 
 import { Campo } from "./Formulario";
@@ -57,7 +58,7 @@ interface Props {
   alCambiar: (d: DatosNegocio) => void;
 }
 
-function useListas() {
+export function useListas() {
   const [categorias, setCategorias] = useState<Categoria[]>([]);
   const [distritos, setDistritos] = useState<string[]>([]);
   useEffect(() => {
@@ -123,11 +124,6 @@ export function CamposDatos({ datos, alCambiar }: Props) {
   );
 }
 
-interface Sugerencia {
-  direccion: string | null;
-  distrito: string | null;
-}
-
 export function CamposUbicacion({
   datos,
   alCambiar,
@@ -136,33 +132,23 @@ export function CamposUbicacion({
 }: Props & { pin: [number, number]; alMoverPin: (p: [number, number]) => void }) {
   const { distritos } = useListas();
   const campo = (n: keyof DatosNegocio) => enlazar(datos, alCambiar, n);
-  const [sugerencia, setSugerencia] = useState<Sugerencia | null>(null);
   const [movido, setMovido] = useState(false);
-
-  // Al mover el pin se pide la dirección de ese punto (reverse geocoding). Espera 600 ms quieto.
-  useEffect(() => {
-    if (!movido) return;
-    const espera = setTimeout(() => {
-      pedir<Sugerencia>(`/geocoding/inverso?lng=${pin[0].toFixed(6)}&lat=${pin[1].toFixed(6)}`, { conSesion: true })
-        .then(setSugerencia)
-        .catch(() => setSugerencia(null));
-    }, 600);
-    return () => clearTimeout(espera);
-  }, [pin, movido]);
-
-  // Si todavía no escribió nada, la sugerencia se completa sola; si ya escribió, solo se ofrece.
-  useEffect(() => {
-    if (!sugerencia) return;
-    if ((!datos.direccion && sugerencia.direccion) || (!datos.distrito && sugerencia.distrito)) {
-      alCambiar({
-        ...datos,
-        direccion: datos.direccion || sugerencia.direccion || "",
-        distrito: datos.distrito || sugerencia.distrito || "",
-      });
+  // Si todavía no escribió nada, la sugerencia del pin se completa sola; si ya escribió, solo se ofrece.
+  const sugerencia = useDireccionDelPin(pin, movido, (s) => {
+    if ((!datos.direccion && s.direccion) || (!datos.distrito && s.distrito)) {
+      alCambiar({ ...datos, direccion: datos.direccion || s.direccion || "", distrito: datos.distrito || s.distrito || "" });
     }
-    // Solo cuando llega una sugerencia nueva.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [sugerencia]);
+  });
+  const { ubicar, estado } = useUbicarDireccion();
+  const ayuda = textoBusqueda(estado);
+
+  // Al terminar de escribir la dirección, el pin va a ese lugar.
+  async function ubicarDireccion() {
+    const lugar = await ubicar(datos.direccion, datos.distrito);
+    if (!lugar) return;
+    alMoverPin([lugar.lng, lugar.lat]);
+    if (!datos.distrito && lugar.distrito) alCambiar({ ...datos, distrito: lugar.distrito });
+  }
 
   const ofrecer =
     sugerencia &&
@@ -182,7 +168,18 @@ export function CamposUbicacion({
         </select>
       </label>
       {/* La dirección y el pin son lo que pone al negocio en el mapa. */}
-      <Campo etiqueta="Dirección *" required minLength={5} maxLength={200} placeholder="Av. Larco 345" {...campo("direccion")} />
+      <div>
+        <Campo
+          etiqueta="Dirección *"
+          required
+          minLength={5}
+          maxLength={200}
+          placeholder="Av. Larco 345"
+          {...campo("direccion")}
+          onBlur={ubicarDireccion}
+        />
+        {ayuda && <p className={`mt-1 text-xs ${ayuda.error ? "text-error" : "text-texto-2"}`}>{ayuda.texto}</p>}
+      </div>
       <Campo etiqueta="Referencia (opcional)" maxLength={200} placeholder="Frente al parque" {...campo("referencia")} />
       {ofrecer && sugerencia && (
         <button

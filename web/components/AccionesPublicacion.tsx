@@ -76,7 +76,7 @@ function ListaComentarios({ publicacionId, alCambiarTotal }: { publicacionId: nu
     alCambiarTotal(total);
   }
 
-  const esEquipo = sesion?.usuario.rol === "operador" || sesion?.usuario.rol === "superadmin";
+  const esEquipo = Boolean(sesion?.usuario.en_panel) || sesion?.usuario.rol === "superadmin";
 
   return (
     <div className="mt-3 space-y-3 border-t border-borde pt-3">

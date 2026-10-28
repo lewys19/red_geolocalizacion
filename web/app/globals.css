@@ -92,3 +92,14 @@ html:has(.ventana-acceso[open]) {
     animation: none;
   }
 }
+
+/* Aviso de éxito: baja desde arriba. */
+.aviso-exito {
+  animation: bajar-aviso 220ms ease-out;
+}
+@keyframes bajar-aviso {
+  from {
+    opacity: 0;
+    transform: translateY(-12px);
+  }
+}

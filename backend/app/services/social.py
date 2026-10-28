@@ -19,7 +19,6 @@ from app.models import (
     Negocio,
     Publicacion,
     Reaccion,
-    RolPlataforma,
     Seguidor,
     Usuario,
 )
@@ -33,7 +32,7 @@ from app.schemas.social import (
     SeguirOut,
 )
 from app.services import imagenes
-from app.services.negocios import _rol_en, exigir_miembro
+from app.services.negocios import es_dueno, exigir_dueno
 
 TipoImagen = Literal["logo", "portada"]
 # Foto de perfil cuadrada; portada 3:1 (como la de X/Twitter).
@@ -47,7 +46,7 @@ def cambiar_imagen(
     db: Session, almacen: Almacen, usuario: Usuario, negocio_id: int, tipo: TipoImagen, datos: bytes | None
 ) -> ImagenOut:
     """Reemplaza (o quita, con datos=None) la foto de perfil o la portada."""
-    exigir_miembro(db, usuario, negocio_id)
+    exigir_dueno(db, usuario, negocio_id)
     negocio = db.get(Negocio, negocio_id)
     assert negocio is not None
     campo = f"{tipo}_clave"
@@ -102,7 +101,7 @@ def seguir(db: Session, usuario: Usuario, negocio_id: int, sigue: bool) -> Segui
 
 
 def relacion(db: Session, usuario: Usuario, negocio_id: int) -> RelacionOut:
-    return RelacionOut(lo_sigo=_lo_sigue(db, usuario, negocio_id), es_miembro=_rol_en(db, usuario, negocio_id) is not None)
+    return RelacionOut(lo_sigo=_lo_sigue(db, usuario, negocio_id), es_miembro=es_dueno(db, usuario, negocio_id))
 
 
 # ---------- Reacciones ----------
@@ -226,7 +225,7 @@ def comentar(db: Session, usuario: Usuario, publicacion_id: int, texto: str) -> 
 
 
 def borrar_comentario(db: Session, usuario: Usuario, publicacion_id: int, comentario_id: int) -> None:
-    """Lo borra quien lo escribió, el negocio dueño de la publicación (moderar su muro) o un operador."""
+    """Lo borra quien lo escribió, el negocio dueño de la publicación (moderar su muro) o el equipo con permiso."""
     comentario = db.get(Comentario, comentario_id)
     if comentario is None or comentario.publicacion_id != publicacion_id:
         raise ErrorNegocio(status.HTTP_404_NOT_FOUND, "Comentario no encontrado.")
@@ -234,8 +233,8 @@ def borrar_comentario(db: Session, usuario: Usuario, publicacion_id: int, coment
     assert publicacion is not None
     puede = (
         comentario.usuario_id == usuario.id
-        or usuario.rol in (RolPlataforma.OPERADOR, RolPlataforma.SUPERADMIN)
-        or _rol_en(db, usuario, publicacion.negocio_id) is not None
+        or usuario.puede("publicaciones.moderar")
+        or es_dueno(db, usuario, publicacion.negocio_id)
     )
     if not puede:
         raise ErrorNegocio(status.HTTP_403_FORBIDDEN, "Solo puedes borrar tus comentarios.")

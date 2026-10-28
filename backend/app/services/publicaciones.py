@@ -13,7 +13,7 @@ from app.models import Categoria, EstadoNegocio, FotoPublicacion, Negocio, Publi
 from app.schemas.catalogo import FotoOut
 from app.schemas.publicacion import MuroOut, NegocioMini, PublicacionOut
 from app.services import imagenes, social
-from app.services.negocios import exigir_miembro
+from app.services.negocios import exigir_dueno
 
 MAX_FOTOS_POR_PUBLICACION = 4
 MAX_TEXTO = 2000
@@ -47,7 +47,7 @@ def _visibles(consulta: Select) -> Select:
 def crear(
     db: Session, almacen: Almacen, usuario: Usuario, negocio_id: int, texto: str, fotos: list[bytes]
 ) -> PublicacionOut:
-    exigir_miembro(db, usuario, negocio_id)
+    exigir_dueno(db, usuario, negocio_id)
     negocio = db.get(Negocio, negocio_id)
     assert negocio is not None
     if negocio.estado != EstadoNegocio.APROBADO:
@@ -79,7 +79,7 @@ def crear(
 
 
 def borrar(db: Session, almacen: Almacen, usuario: Usuario, negocio_id: int, publicacion_id: int) -> None:
-    exigir_miembro(db, usuario, negocio_id)
+    exigir_dueno(db, usuario, negocio_id)
     publicacion = db.get(Publicacion, publicacion_id)
     if publicacion is None or publicacion.negocio_id != negocio_id:
         raise ErrorNegocio(status.HTTP_404_NOT_FOUND, "Publicación no encontrada.")

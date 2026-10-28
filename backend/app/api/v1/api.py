@@ -2,12 +2,24 @@
 
 from fastapi import APIRouter
 
-from app.api.v1.endpoints import admin, auth, categorias, geocoding, mapa, negocios, publicaciones, social, yo
+from app.api.v1.endpoints import (
+    admin,
+    auth,
+    categorias,
+    geocoding,
+    mapa,
+    negocios,
+    perfiles,
+    publicaciones,
+    social,
+    yo,
+)
 
 api_router = APIRouter()
 
 api_router.include_router(auth.router)
 api_router.include_router(yo.router)
+api_router.include_router(perfiles.router)
 api_router.include_router(categorias.router)
 api_router.include_router(mapa.router)
 api_router.include_router(geocoding.router)

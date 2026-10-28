@@ -25,6 +25,7 @@ from app.core.errores import ErrorNegocio
 from app.core.fechas import ahora
 from app.core.security import HASH_SEÑUELO
 from app.models import CuentaExterna, Usuario
+from app.services.usuarios import username_libre
 
 SEGUNDOS_ESTADO = 600
 SEGUNDOS_CANJE = 60
@@ -156,7 +157,11 @@ def cuenta_para(db: Session, proveedor: str, perfil: Perfil) -> Usuario:
         if usuario is None:
             # Ley 29733: la ventana avisa que continuar con Google/Microsoft acepta los términos.
             usuario = Usuario(
-                email=perfil.email, nombre=perfil.nombre, hash_contrasena=HASH_SEÑUELO, acepto_terminos_en=ahora()
+                email=perfil.email,
+                username=username_libre(db, perfil.nombre),
+                nombre=perfil.nombre,
+                hash_contrasena=HASH_SEÑUELO,
+                acepto_terminos_en=ahora(),
             )
             db.add(usuario)
             db.flush()

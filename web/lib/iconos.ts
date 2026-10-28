@@ -1,4 +1,5 @@
-// Emoji de cada categoría según su campo `icono` (ver la migración 0001 del backend).
+// Emoji de cada categoría. Desde la migración 0011 el campo `icono` ya es el emoji (se elige en el panel);
+// los nombres viejos se siguen traduciendo por si alguna base aún no migró.
 const EMOJIS: Record<string, string> = {
   utensils: "🍽️",
   drumstick: "🍗",
@@ -19,5 +20,5 @@ const EMOJIS: Record<string, string> = {
 };
 
 export function emojiDe(icono: string | null): string {
-  return (icono && EMOJIS[icono]) || "📍";
+  return (icono && (EMOJIS[icono] ?? icono)) || "📍";
 }

@@ -16,11 +16,22 @@ class DireccionSugerida:
     completa: str  # el texto entero del proveedor, para mostrarlo
 
 
+@dataclass(frozen=True)
+class LugarEncontrado:
+    lng: float
+    lat: float
+    sugerencia: DireccionSugerida
+
+
 class ProveedorGeocoding(Protocol):
     nombre: str
 
     def inverso(self, lng: float, lat: float) -> DireccionSugerida | None:
         """Coordenadas → dirección (reverse geocoding). None si no encuentra nada."""
+        ...
+
+    def directo(self, texto: str) -> LugarEncontrado | None:
+        """Dirección escrita → punto en el mapa (geocoding). Solo dentro del piloto. None si no encuentra."""
         ...
 
 
@@ -30,4 +41,7 @@ class SinGeocoding:
     nombre = "ninguno"
 
     def inverso(self, lng: float, lat: float) -> DireccionSugerida | None:
+        return None
+
+    def directo(self, texto: str) -> LugarEncontrado | None:
         return None

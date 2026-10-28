@@ -17,7 +17,11 @@ async function mensajeDeError(r: Response): Promise<string> {
   try {
     const cuerpo = await r.json();
     if (typeof cuerpo.detail === "string") return cuerpo.detail;
-    if (Array.isArray(cuerpo.detail) && cuerpo.detail[0]?.msg) return "Revisa los datos del formulario.";
+    if (Array.isArray(cuerpo.detail) && cuerpo.detail[0]?.msg) {
+      // Los mensajes propios de la API (en español) llegan como "Value error, …"; los genéricos de Pydantic, no.
+      const msg: string = cuerpo.detail[0].msg;
+      return msg.startsWith("Value error, ") ? msg.slice("Value error, ".length) : "Revisa los datos del formulario.";
+    }
   } catch {
     // respuesta sin JSON
   }
@@ -104,4 +108,22 @@ export async function conReintentos<T>(leer: () => Promise<T>, intentos = 2, esp
       await new Promise((r) => setTimeout(r, esperaMs));
     }
   }
+}
+
+/** Descarga un archivo de la API (p. ej. el CSV del panel) con la sesión actual y lo entrega al navegador. */
+export async function descargar(ruta: string, nombreArchivo: string): Promise<void> {
+  const enviar = (sesion: Sesion | null) =>
+    fetch(`${BASE}${ruta}`, { headers: sesion ? { Authorization: `Bearer ${sesion.token_acceso}` } : {} });
+  let r = await enviar(leerSesion());
+  if (r.status === 401) {
+    const nueva = await refrescar();
+    if (nueva) r = await enviar(nueva);
+  }
+  if (!r.ok) throw new ErrorApi(r.status, await mensajeDeError(r));
+  const url = URL.createObjectURL(await r.blob());
+  const enlace = document.createElement("a");
+  enlace.href = url;
+  enlace.download = nombreArchivo;
+  enlace.click();
+  URL.revokeObjectURL(url);
 }

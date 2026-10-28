@@ -25,13 +25,12 @@ from app.models import (
     Categoria,
     EstadoNegocio,
     Horario,
-    MiembroNegocio,
     Negocio,
-    RolMiembro,
     RolPlataforma,
     Usuario,
 )
 from app.services.negocios import slug_unico
+from app.services.usuarios import username_libre
 
 EMAIL_DEMO = "demo@altoque.invalid"
 
@@ -77,6 +76,7 @@ def crear_superadmin(email: str, nombre: str) -> None:
                 sys.exit("La contraseña es demasiado corta.")
             usuario = Usuario(
                 email=email,
+                username=username_libre(db, nombre),
                 nombre=nombre,
                 hash_contrasena=hash_contrasena(contrasena),
                 acepto_terminos_en=ahora(),
@@ -92,7 +92,13 @@ def sembrar_demo(cantidad: int) -> None:
     with SessionLocal() as db:
         demo = db.scalar(select(Usuario).where(Usuario.email == EMAIL_DEMO))
         if demo is None:
-            demo = Usuario(email=EMAIL_DEMO, nombre="Demo", hash_contrasena=HASH_SEÑUELO, acepto_terminos_en=ahora())
+            demo = Usuario(
+                email=EMAIL_DEMO,
+                username=username_libre(db, "demo"),
+                nombre="Demo",
+                hash_contrasena=HASH_SEÑUELO,
+                acepto_terminos_en=ahora(),
+            )
             db.add(demo)
             db.flush()
         categorias = {c.slug: c.id for c in db.scalars(select(Categoria))}
@@ -102,6 +108,7 @@ def sembrar_demo(cantidad: int) -> None:
             nombre = azar.choice(NOMBRES_DEMO[slug_cat])
             abre, cierra = azar.choice([(time(8), time(20)), (time(12), time(23)), (time(18), time(2)), (time(9), time(18))])
             negocio = Negocio(
+                usuario_id=demo.id,
                 nombre=nombre,
                 slug=slug_unico(db, nombre, distrito),
                 categoria_id=categorias[slug_cat],
@@ -116,8 +123,6 @@ def sembrar_demo(cantidad: int) -> None:
                 horarios=[Horario(dia_semana=d, abre=abre, cierra=cierra) for d in range(7) if azar.random() < 0.9],
             )
             db.add(negocio)
-            db.flush()
-            db.add(MiembroNegocio(usuario_id=demo.id, negocio_id=negocio.id, rol=RolMiembro.PROPIETARIO))
         db.commit()
     print(f"Listo: {cantidad} negocios de demostración en Lima.")
 

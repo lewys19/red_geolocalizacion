@@ -60,7 +60,8 @@ services:
       interval: 10s
       timeout: 5s
       retries: 6
-      start_period: 20s
+      # Al arrancar corre las migraciones: con varias seguidas pasa los 20 s y la web no esperaba.
+      start_period: 120s
     restart: unless-stopped
 
   web:

@@ -5,7 +5,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query, status
 from app.api.deps import UsuarioActual
 from app.core.geo import dentro_del_piloto
 from app.geocoding import ProveedorGeocoding, obtener_geocodificador
-from app.schemas.negocio import DireccionSugeridaOut
+from app.schemas.negocio import DireccionSugeridaOut, LugarOut
 
 router = APIRouter(prefix="/geocoding", tags=["Mapa"])
 
@@ -29,3 +29,22 @@ def direccion_del_punto(
     if sugerencia is None:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "No encontramos una dirección para ese punto.")
     return DireccionSugeridaOut(direccion=sugerencia.direccion, distrito=sugerencia.distrito, completa=sugerencia.completa)
+
+
+@router.get("/buscar", response_model=LugarOut)
+def punto_de_la_direccion(
+    _usuario: UsuarioActual,
+    geo: Geocodificador,
+    direccion: Annotated[str, Query(min_length=4, max_length=200)],
+    distrito: Annotated[str | None, Query(max_length=60)] = None,
+) -> LugarOut:
+    """Dirección escrita → punto para el pin del negocio (solo Lima y Callao). Es una ayuda: el dueño lo ajusta."""
+    texto = ", ".join(p for p in (direccion.strip(), distrito, "Lima", "Perú") if p)
+    try:
+        lugar = geo.directo(texto)
+    except Exception:  # noqa: BLE001  (red caída, servicio lento: la ayuda es opcional)
+        lugar = None
+    if lugar is None or not dentro_del_piloto(lugar.lng, lugar.lat):
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "No encontramos esa dirección. Ubica el pin en el mapa.")
+    s = lugar.sugerencia
+    return LugarOut(lng=lugar.lng, lat=lugar.lat, direccion=s.direccion, distrito=s.distrito, completa=s.completa)

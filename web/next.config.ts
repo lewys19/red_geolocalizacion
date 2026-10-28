@@ -10,6 +10,16 @@ const nextConfig: NextConfig = {
   partialPrefetching: true,
   // Genera un servidor mínimo (.next/standalone) para una imagen Docker liviana.
   output: "standalone",
+  // Solo en `npm run dev`: permite abrirla desde otra PC de la red local (p. ej. Windows → VM Kali).
+  allowedDevOrigins: ["192.168.*.*"],
+  // Direcciones viejas → las aprobadas en la arquitectura.
+  async redirects() {
+    return [
+      { source: "/ingresar", destination: "/login", permanent: true },
+      { source: "/cuenta", destination: "/perfil", permanent: true },
+      { source: "/u/:codigo", destination: "/perfil", permanent: true },
+    ];
+  },
   async rewrites() {
     return [
       { source: "/api/v1/:ruta*", destination: `${API_INTERNA}/api/v1/:ruta*` },

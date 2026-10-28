@@ -1,8 +1,5 @@
 import type { Metadata, Viewport } from "next";
 
-import { Encabezado } from "@/components/Encabezado";
-import { VentanaAcceso } from "@/components/VentanaAcceso";
-
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -18,9 +15,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html lang="es" className="h-full antialiased">
       <body className="flex min-h-full flex-col font-sans">
-        <Encabezado />
-        <main className="flex flex-1 flex-col">{children}</main>
-        <VentanaAcceso />
+        {children}
       </body>
     </html>
   );

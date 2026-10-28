@@ -12,22 +12,21 @@ import { Isotipo } from "./Logo";
 const TEXTOS: Record<Vista, { titulo: string; bajada: string }> = {
   ingresar: {
     titulo: "Inicia sesión en Altoque",
-    bajada:
-      "Aquí encontrarás negocios de diferentes rubros que podrían interesarte, o registra el tuyo y deja que los usuarios conozcan lo que ofreces.",
+    bajada: "Encuentra lo que buscas, al toque.",
   },
   registro: {
     titulo: "Crea tu cuenta en Altoque",
-    bajada: "Es gratis. Descubre negocios cerca de ti o registra el tuyo para que más gente lo conozca.",
+    bajada: "Es gratis. Encuentra lo que buscas.",
   },
 };
 
 const ERRORES_EXTERNOS: Record<string, string> = {
   cancelado: "Se canceló el ingreso. Puedes intentarlo otra vez.",
-  fallo: "No pudimos conectar con Google o Microsoft. Inténtalo en un momento.",
+  fallo: "No pudimos conectar con Google. Inténtalo en un momento.",
   eliminada: "Esa cuenta fue eliminada.",
 };
 
-/** Al volver de Google o Microsoft la URL trae ?ingreso=<código> (o ?ingreso_error=...). */
+/** Al volver de Google (o Microsoft) la URL trae ?ingreso=<código> (o ?ingreso_error=...). */
 function useVueltaExterna() {
   useEffect(() => {
     const url = new URL(window.location.href);
@@ -70,49 +69,56 @@ export function VentanaAcceso() {
       onClose={cerrarAcceso}
       // Clic en la parte oscura (fuera de la tarjeta) = cerrar.
       onClick={(e) => e.target === e.currentTarget && cerrarAcceso()}
-      className="ventana-acceso m-auto max-h-[calc(100dvh-2rem)] w-[min(27rem,calc(100%-2rem))] overflow-y-auto rounded-3xl border border-borde bg-superficie p-0 text-texto shadow-2xl"
+      // overflow visible: el logo sobresale del borde superior; lo que se desplaza es la tarjeta de adentro.
+      className="ventana-acceso m-auto w-[min(24rem,calc(100%-2rem))] overflow-visible bg-transparent p-0 text-texto"
     >
       {vista && (
-        <div key={vista} className="relative px-6 pt-8 pb-6 sm:px-8">
-          <button
-            type="button"
-            onClick={cerrarAcceso}
-            aria-label="Cerrar"
-            className="absolute top-3 right-3 flex h-9 w-9 items-center justify-center rounded-full text-xl text-texto-2 hover:bg-fondo hover:text-texto"
+        <div className="relative mt-10">
+          {/* Logo a medio salir del borde (la mitad afuera). */}
+          <span className="absolute top-0 left-1/2 z-10 flex h-20 w-20 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full border border-borde bg-superficie shadow-md">
+            <Isotipo className="h-14 w-14" redondo />
+          </span>
+          <div
+            key={vista}
+            className="relative max-h-[calc(100dvh-5rem)] overflow-y-auto rounded-3xl border border-borde bg-superficie px-6 pt-12 pb-5 shadow-2xl sm:px-7 [&_form]:space-y-2.5 [&_input]:py-1.5 [&_label>span:first-child]:mb-0.5 [&_label>span:first-child]:text-xs"
           >
-            ×
-          </button>
-
-          <header className="mb-6 text-center">
-            <span className="mx-auto mb-4 flex h-20 w-20 items-center justify-center rounded-full bg-marca-suave ring-4 ring-marca/15">
-              <Isotipo className="h-14 w-14" redondo />
-            </span>
-            <h2 id="titulo-acceso" className="text-xl font-bold tracking-tight">
-              {textos.titulo}
-            </h2>
-            <p className="mx-auto mt-2 max-w-xs text-xs leading-relaxed text-texto-2">{textos.bajada}</p>
-          </header>
-
-          {aviso && <p className="mb-4 rounded-lg bg-marca-suave px-3 py-2 text-sm text-marca-fuerte">{aviso}</p>}
-
-          {vista === "ingresar" ? <FormIngreso alEntrar={cerrarAcceso} /> : <FormRegistro alEntrar={cerrarAcceso} />}
-
-          <Separador />
-          <BotonesExternos />
-          <p className="mt-3 text-center text-[11px] leading-snug text-texto-2">
-            Al continuar con Google o Microsoft aceptas los términos de uso y la política de privacidad.
-          </p>
-
-          <p className="mt-6 border-t border-borde pt-5 text-center text-sm text-texto-2">
-            {vista === "ingresar" ? "¿No tienes cuenta? " : "¿Ya tienes cuenta? "}
             <button
               type="button"
-              onClick={() => abrirAcceso(vista === "ingresar" ? "registro" : "ingresar")}
-              className="font-semibold text-marca-fuerte hover:underline"
+              onClick={cerrarAcceso}
+              aria-label="Cerrar"
+              className="absolute top-3 right-3 flex h-9 w-9 items-center justify-center rounded-full text-xl text-texto-2 hover:bg-fondo hover:text-texto"
             >
-              {vista === "ingresar" ? "Regístrate" : "Inicia sesión"}
+              ×
             </button>
-          </p>
+
+            <header className="mb-4 text-center">
+              <h2 id="titulo-acceso" className="text-xl font-bold tracking-tight">
+                {textos.titulo}
+              </h2>
+              <p className="mt-1 text-xs text-texto-2">{textos.bajada}</p>
+            </header>
+
+            {aviso && <p className="mb-4 rounded-lg bg-marca-suave px-3 py-2 text-sm text-marca-fuerte">{aviso}</p>}
+
+            {vista === "ingresar" ? <FormIngreso alEntrar={cerrarAcceso} /> : <FormRegistro alEntrar={cerrarAcceso} />}
+
+            <Separador />
+            <BotonesExternos />
+            <p className="mt-2 text-center text-[11px] leading-snug text-texto-2">
+              Con Google aceptas los términos y la privacidad.
+            </p>
+
+            <p className="mt-4 border-t border-borde pt-3 text-center text-sm text-texto-2">
+              {vista === "ingresar" ? "¿No tienes cuenta? " : "¿Ya tienes cuenta? "}
+              <button
+                type="button"
+                onClick={() => abrirAcceso(vista === "ingresar" ? "registro" : "ingresar")}
+                className="font-semibold text-marca-fuerte hover:underline"
+              >
+                {vista === "ingresar" ? "Regístrate" : "Inicia sesión"}
+              </button>
+            </p>
+          </div>
         </div>
       )}
     </dialog>

@@ -7,6 +7,7 @@ from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
+from app.core import usernames
 from app.core.config import settings
 from app.core.errores import ErrorNegocio
 from app.core.fechas import ahora
@@ -21,6 +22,7 @@ from app.core.security import (
 from app.models import TokenRefresco, Usuario
 from app.schemas.auth import LoginIn, RegistroIn, SesionOut, normalizar_celular
 from app.schemas.usuario import UsuarioOut
+from app.services.usuarios import username_libre
 
 
 def _normalizar(email: str) -> str:
@@ -49,6 +51,7 @@ def abrir_sesion(db: Session, usuario: Usuario) -> SesionOut:
 def registrar(db: Session, datos: RegistroIn) -> SesionOut:
     usuario = Usuario(
         email=_normalizar(datos.email),
+        username=username_libre(db, datos.nombre),
         nombre=datos.nombre,
         telefono=datos.celular,
         hash_contrasena=hash_contrasena(datos.contrasena),
@@ -59,6 +62,8 @@ def registrar(db: Session, datos: RegistroIn) -> SesionOut:
         db.flush()
     except IntegrityError as error:
         db.rollback()
+        if "username" in str(error.orig):  # dos registros con el mismo nombre al mismo tiempo
+            raise ErrorNegocio(status.HTTP_409_CONFLICT, "Inténtalo otra vez en un momento.") from None
         repetido = "celular" if "telefono" in str(error.orig) else "email"
         raise ErrorNegocio(status.HTTP_409_CONFLICT, f"Ya existe una cuenta con ese {repetido}.") from None
     return abrir_sesion(db, usuario)
@@ -123,6 +128,8 @@ def eliminar_cuenta(db: Session, usuario: Usuario) -> None:
     usuario.eliminado_en = ahora()
     usuario.email = f"eliminado-{usuario.id}@altoque.invalid"
     usuario.nombre = "Cuenta eliminada"
+    usuario.username = usernames.de_cuenta_eliminada(usuario.id)
+    usuario.avatar_clave = None
     usuario.telefono = None
     usuario.hash_contrasena = HASH_SEÑUELO
     _revocar_todas(db, usuario.id)

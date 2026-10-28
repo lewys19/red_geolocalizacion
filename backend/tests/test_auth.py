@@ -13,7 +13,7 @@ def test_registro_abre_sesion_y_yo_responde(client: TestClient, registrar: Calla
     yo = r.json()
     assert yo["email"] == "ana@example.com"
     assert yo["negocios"] == []
-    assert (yo["es_negocio"], yo["es_operador"], yo["es_superadmin"]) == (False, False, False)
+    assert (yo["es_negocio"], yo["es_operador"], yo["es_superadmin"], yo["permisos"]) == (False, False, False, [])
 
 
 def test_registro_exige_aceptar_terminos(client: TestClient) -> None:
