@@ -269,3 +269,34 @@ export interface CategoriaAdmin {
   hijas: number;
   negocios: number;
 }
+
+/** Banner activo de la columna derecha del Inicio. */
+export interface Anuncio {
+  posicion: number;
+  titulo: string | null;
+  enlace: string | null;
+  imagen: string;
+}
+
+/** Un espacio publicitario en el panel (puede estar vacío). */
+export interface AnuncioAdmin {
+  posicion: number;
+  titulo: string | null;
+  enlace: string | null;
+  imagen: string | null;
+  activo: boolean;
+}
+
+export interface Sugerencia {
+  id: number;
+  texto: string;
+  creado_en: string;
+  usuario: { id: number; username: string; nombre: string } | null;
+}
+
+export interface PaginaSugerencias {
+  total: number;
+  pagina: number;
+  por_pagina: number;
+  sugerencias: Sugerencia[];
+}

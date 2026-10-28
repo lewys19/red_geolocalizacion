@@ -2,6 +2,7 @@
 
 from app.models.catalogo import Foto, Producto
 from app.models.categoria import Categoria
+from app.models.contenido import Anuncio, Sugerencia
 from app.models.horario import Horario
 from app.models.enums import EstadoNegocio, RolPlataforma
 from app.models.negocio import Negocio
@@ -11,6 +12,7 @@ from app.models.social import TIPOS_REACCION, Comentario, Reaccion, Seguidor
 from app.models.usuario import CuentaExterna, TokenRefresco, Usuario
 
 __all__ = [
+    "Anuncio",
     "Categoria",
     "Comentario",
     "CuentaExterna",
@@ -25,6 +27,7 @@ __all__ = [
     "RolPanel",
     "RolPlataforma",
     "Seguidor",
+    "Sugerencia",
     "TIPOS_REACCION",
     "TokenRefresco",
     "Usuario",

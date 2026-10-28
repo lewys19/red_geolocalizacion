@@ -36,8 +36,8 @@ URL_PRUEBAS = make_url(os.environ.get("DATABASE_URL_PRUEBAS") or settings.DATABA
 )
 # Tablas que se vacían entre pruebas (las categorías vienen de la migración y se conservan).
 TABLAS_DE_DATOS = (
-    "comentarios, reacciones, seguidores, fotos_publicacion, publicaciones, fotos, productos, horarios, "
-    "negocios, cuentas_externas, tokens_refresco, usuarios"
+    "sugerencias, anuncios, comentarios, reacciones, seguidores, fotos_publicacion, publicaciones, fotos, productos, "
+    "horarios, negocios, cuentas_externas, tokens_refresco, usuarios"
 )
 
 

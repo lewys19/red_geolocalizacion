@@ -4,8 +4,8 @@ import Link from "next/link";
 import { useCallback, useEffect, useState, useSyncExternalStore } from "react";
 
 import { abrirAcceso } from "@/lib/acceso";
-import { conReintentos, pedir } from "@/lib/api";
-import type { Muro, NegocioMini, Publicacion } from "@/lib/tipos";
+import { ErrorApi, conReintentos, pedir } from "@/lib/api";
+import type { Anuncio, Muro, NegocioMini, Publicacion } from "@/lib/tipos";
 import { pedirGps, useUbicacion } from "@/lib/ubicacion";
 import { useSesion } from "@/lib/usarSesion";
 
@@ -117,6 +117,7 @@ function PanelIzquierdo({
       >
         Crear publicación
       </Link>
+      <NotaSugerencia />
     </div>
   );
 }
@@ -246,20 +247,131 @@ function Circulos({ desde }: { desde: [number, number] | null }) {
   );
 }
 
-/** Columna derecha: espacios que más adelante serán publicidad pagada. */
+/** Columna derecha: los banners que el equipo activa en el panel (0 a 3). Sin ninguno, los espacios en blanco. */
 function Publicidad() {
+  const [anuncios, setAnuncios] = useState<Anuncio[] | null>(null);
+  useEffect(() => {
+    pedir<Anuncio[]>("/anuncios")
+      .then(setAnuncios)
+      .catch(() => setAnuncios([]));
+  }, []);
+
+  if (anuncios === null) return null;
+  if (!anuncios.length) {
+    return (
+      <aside aria-label="Publicidad" className="space-y-3">
+        {[1, 2, 3].map((i) => (
+          <div
+            key={i}
+            className="flex h-48 flex-col items-center justify-center rounded-2xl border-2 border-dashed border-borde bg-superficie p-4 text-center"
+          >
+            <span className="text-sm font-semibold text-texto-2">Espacio publicitario</span>
+            <span className="mt-1 text-xs text-texto-2">Muy pronto, tu negocio aquí</span>
+          </div>
+        ))}
+      </aside>
+    );
+  }
   return (
     <aside aria-label="Publicidad" className="space-y-3">
-      {[1, 2, 3].map((i) => (
-        <div
-          key={i}
-          className="flex h-48 flex-col items-center justify-center rounded-2xl border-2 border-dashed border-borde bg-superficie p-4 text-center"
-        >
-          <span className="text-sm font-semibold text-texto-2">Espacio publicitario</span>
-          <span className="mt-1 text-xs text-texto-2">Muy pronto, tu negocio aquí</span>
-        </div>
-      ))}
+      {anuncios.map((a) => {
+        const imagen = (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={a.imagen}
+            alt={a.titulo ?? "Publicidad"}
+            className="w-full rounded-2xl border border-borde object-cover"
+          />
+        );
+        if (!a.enlace) return <div key={a.posicion}>{imagen}</div>;
+        // Enlaces de afuera se abren aparte y se marcan como patrocinados (no pasan reputación a buscadores).
+        return a.enlace.startsWith("/") ? (
+          <Link key={a.posicion} href={a.enlace} className="block transition hover:opacity-90">
+            {imagen}
+          </Link>
+        ) : (
+          <a
+            key={a.posicion}
+            href={a.enlace}
+            target="_blank"
+            rel="noopener noreferrer sponsored"
+            className="block transition hover:opacity-90"
+          >
+            {imagen}
+          </a>
+        );
+      })}
+      <p className="text-center text-[11px] text-texto-2">Publicidad</p>
     </aside>
+  );
+}
+
+/** Notita de sugerencias: un texto pequeño que se despliega en un cuadro con su botón de enviar. */
+function NotaSugerencia() {
+  const [abierta, setAbierta] = useState(false);
+  const [texto, setTexto] = useState("");
+  const [estado, setEstado] = useState<"enviando" | "ok" | string | null>(null);
+
+  async function enviar(e: React.FormEvent) {
+    e.preventDefault();
+    setEstado("enviando");
+    try {
+      await pedir("/sugerencias", { metodo: "POST", conSesion: true, cuerpo: { texto } });
+      setTexto("");
+      setEstado("ok");
+    } catch (err) {
+      setEstado(err instanceof ErrorApi ? err.message : "No se pudo enviar. Revisa tu conexión.");
+    }
+  }
+
+  return (
+    <div className="text-xs">
+      <button
+        type="button"
+        onClick={() => setAbierta((a) => !a)}
+        aria-expanded={abierta}
+        className="flex items-center gap-1 text-texto-2 hover:text-texto"
+      >
+        <svg
+          viewBox="0 0 24 24"
+          className={`h-3 w-3 transition-transform ${abierta ? "rotate-90" : ""}`}
+          aria-hidden="true"
+        >
+          <path d="m9 5 7 7-7 7" fill="none" stroke="currentColor" strokeWidth="2.5" />
+        </svg>
+        ¿Tienes una sugerencia?
+      </button>
+      {abierta && (
+        <form onSubmit={enviar} className="mt-2 space-y-1.5">
+          <textarea
+            value={texto}
+            onChange={(e) => {
+              setTexto(e.target.value);
+              if (estado && estado !== "enviando") setEstado(null);
+            }}
+            rows={3}
+            minLength={3}
+            maxLength={1000}
+            required
+            placeholder="Cuéntanos qué te gustaría ver en Altoque…"
+            aria-label="Tu sugerencia"
+            className="w-full resize-none rounded-lg border border-borde bg-superficie px-2 py-1.5 text-xs outline-none focus:border-marca"
+          />
+          <div className="flex items-center justify-between gap-2">
+            <span className={estado === "ok" ? "text-green-700 dark:text-green-400" : "text-error"}>
+              {estado === "ok" ? "¡Gracias! La recibimos." : estado && estado !== "enviando" ? estado : ""}
+            </span>
+            <button
+              type="submit"
+              disabled={estado === "enviando" || texto.trim().length < 3}
+              className="rounded-md border border-borde px-2 py-0.5 text-[11px] text-texto-2 hover:border-marca hover:text-texto disabled:opacity-50"
+            >
+              {estado === "enviando" ? "Enviando…" : "Enviar"}
+            </button>
+          </div>
+        </form>
+      )}
+    </div>
   );
 }
 

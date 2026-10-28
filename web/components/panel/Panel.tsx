@@ -39,7 +39,8 @@ const MENU: Opcion[] = [
   {
     href: "/admin/usuarios",
     texto: "Usuarios",
-    icono: "M16 11a4 4 0 1 0-4-4 4 4 0 0 0 4 4zM8 12a3 3 0 1 0-3-3 3 3 0 0 0 3 3zm8 1c-2.7 0-8 1.3-8 4v3h16v-3c0-2.7-5.3-4-8-4zM8 14c-.3 0-.7 0-1.1.1C4.6 14.4 1 15.5 1 17.5V20h5v-3c0-1.2.7-2.2 2-3z",
+    icono:
+      "M16 11a4 4 0 1 0-4-4 4 4 0 0 0 4 4zM8 12a3 3 0 1 0-3-3 3 3 0 0 0 3 3zm8 1c-2.7 0-8 1.3-8 4v3h16v-3c0-2.7-5.3-4-8-4zM8 14c-.3 0-.7 0-1.1.1C4.6 14.4 1 15.5 1 17.5V20h5v-3c0-1.2.7-2.2 2-3z",
     permiso: "usuarios.ver",
   },
   {
@@ -52,6 +53,18 @@ const MENU: Opcion[] = [
     href: "/admin/categorias",
     texto: "Categorías",
     icono: "M4 4h7v7H4zm9 0h7v7h-7zM4 13h7v7H4zm9 0h7v7h-7z",
+  },
+  {
+    href: "/admin/publicidad",
+    texto: "Publicidad",
+    icono:
+      "M3 10v4a1 1 0 0 0 1 1h2l4 4V5L6 9H4a1 1 0 0 0-1 1zm13.5 2A4.5 4.5 0 0 0 14 8v8a4.5 4.5 0 0 0 2.5-4zM14 3.2v2.1a7 7 0 0 1 0 13.4v2.1a9 9 0 0 0 0-17.6z",
+  },
+  {
+    href: "/admin/sugerencias",
+    texto: "Sugerencias",
+    icono: "M4 4h16v12H7l-3 3zm3 4v2h10V8zm0 4v2h7v-2z",
+    permiso: "sugerencias.ver",
   },
   {
     href: "/admin/roles",
@@ -123,7 +136,9 @@ function BarraLateral({ yo, abierta, alCerrar }: { yo: Yo; abierta: boolean; alC
                 href={o.href}
                 onClick={() => window.innerWidth < 1024 && alCerrar()}
                 className={`flex items-center gap-3 border-l-4 px-5 py-2.5 text-sm ${
-                  activa ? "border-marca bg-white/10 font-semibold text-white" : "border-transparent hover:bg-white/5 hover:text-white"
+                  activa
+                    ? "border-marca bg-white/10 font-semibold text-white"
+                    : "border-transparent hover:bg-white/5 hover:text-white"
                 }`}
               >
                 <Icono d={o.icono} />
@@ -143,7 +158,12 @@ function BarraLateral({ yo, abierta, alCerrar }: { yo: Yo; abierta: boolean; alC
 function BarraSuperior({ yo, alAlternarMenu }: { yo: Yo; alAlternarMenu: () => void }) {
   return (
     <header className="sticky top-0 z-20 flex h-16 items-center gap-3 border-b border-borde bg-superficie px-4 shadow-sm">
-      <button type="button" onClick={alAlternarMenu} aria-label="Mostrar u ocultar el menú" className="rounded-lg p-2 text-texto-2 hover:bg-fondo">
+      <button
+        type="button"
+        onClick={alAlternarMenu}
+        aria-label="Mostrar u ocultar el menú"
+        className="rounded-lg p-2 text-texto-2 hover:bg-fondo"
+      >
         <Icono d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z" />
       </button>
       <p className="flex-1 truncate text-sm font-semibold">Panel administrativo</p>
@@ -151,7 +171,11 @@ function BarraSuperior({ yo, alAlternarMenu }: { yo: Yo; alAlternarMenu: () => v
         <p className="text-sm font-semibold">{yo.nombre}</p>
         <p className="text-xs text-texto-2">{yo.rol_panel}</p>
       </div>
-      <button type="button" onClick={salir} className="rounded-lg border border-borde px-3 py-1.5 text-sm hover:bg-fondo">
+      <button
+        type="button"
+        onClick={salir}
+        className="rounded-lg border border-borde px-3 py-1.5 text-sm hover:bg-fondo"
+      >
         Salir
       </button>
     </header>
@@ -189,7 +213,11 @@ export function Panel({ children }: { children: ReactNode }) {
             <p>
               La cuenta <strong>{actual.email}</strong> no tiene acceso al panel administrativo.
             </p>
-            <button type="button" onClick={salir} className="w-full rounded-lg bg-marca px-4 py-2.5 font-semibold text-sobre-marca">
+            <button
+              type="button"
+              onClick={salir}
+              className="w-full rounded-lg bg-marca px-4 py-2.5 font-semibold text-sobre-marca"
+            >
               Ingresar con otra cuenta
             </button>
           </div>
@@ -236,5 +264,9 @@ export function Migas({ items }: { items: { texto: string; href?: string }[] }) 
 
 /** Mensaje cuando el rol no tiene el permiso de la página. */
 export function SinPermiso() {
-  return <p className="rounded-xl border border-borde bg-superficie p-6 text-center text-texto-2">Tu rol no tiene permiso para ver esta sección.</p>;
+  return (
+    <p className="rounded-xl border border-borde bg-superficie p-6 text-center text-texto-2">
+      Tu rol no tiene permiso para ver esta sección.
+    </p>
+  );
 }

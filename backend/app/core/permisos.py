@@ -12,5 +12,7 @@ PERMISOS: dict[str, str] = {
     "negocios.moderar": "Aprobar o rechazar negocios",
     "categorias.gestionar": "Crear, editar y eliminar categorías",
     "publicaciones.moderar": "Borrar comentarios de cualquier publicación",
+    "publicidad.gestionar": "Subir y activar los banners publicitarios",
+    "sugerencias.ver": "Leer y borrar las sugerencias",
     "roles.gestionar": "Crear roles y asignarlos a usuarios",
 }

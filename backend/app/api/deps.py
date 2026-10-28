@@ -87,4 +87,6 @@ EliminarUsuarios = Annotated[Usuario, Depends(requiere_permiso("usuarios.elimina
 VerNegocios = Annotated[Usuario, Depends(requiere_permiso("negocios.ver"))]
 ModerarNegocios = Annotated[Usuario, Depends(requiere_permiso("negocios.moderar"))]
 GestionarCategorias = Annotated[Usuario, Depends(requiere_permiso("categorias.gestionar"))]
+GestionarPublicidad = Annotated[Usuario, Depends(requiere_permiso("publicidad.gestionar"))]
+VerSugerencias = Annotated[Usuario, Depends(requiere_permiso("sugerencias.ver"))]
 GestionarRoles = Annotated[Usuario, Depends(requiere_permiso("roles.gestionar"))]

@@ -2,7 +2,7 @@
 
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, Query, Response, status
+from fastapi import APIRouter, Depends, File, Query, Response, UploadFile, status
 
 from app.almacen import Almacen, obtener_almacen
 from app.api.deps import (
@@ -10,12 +10,16 @@ from app.api.deps import (
     EditarUsuarios,
     EliminarUsuarios,
     GestionarCategorias,
+    GestionarPublicidad,
     GestionarRoles,
     MiembroPanel,
     ModerarNegocios,
     VerNegocios,
+    VerSugerencias,
     VerUsuarios,
 )
+from app.core.config import settings
+from app.core.errores import ErrorNegocio
 from app.models import EstadoNegocio
 from app.schemas.admin import (
     AsignarRolIn,
@@ -27,9 +31,10 @@ from app.schemas.admin import (
     UsuarioAdminOut,
 )
 from app.schemas.categoria import CategoriaAdminOut, CategoriaIn
+from app.schemas.contenido import AnuncioAdminOut, AnuncioIn, PaginaSugerencias
 from app.schemas.negocio import NegocioOut, RechazoIn
 from app.schemas.usuario import YoCambios
-from app.services import categorias, negocios, panel
+from app.services import categorias, contenido, negocios, panel
 
 router = APIRouter(prefix="/admin", tags=["Administración"])
 
@@ -165,4 +170,56 @@ def editar_categoria(categoria_id: int, datos: CategoriaIn, _quien: GestionarCat
 def eliminar_categoria(categoria_id: int, _quien: GestionarCategorias, db: Db) -> Response:
     """Solo si no tiene negocios ni subcategorías."""
     categorias.eliminar(db, categoria_id)
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+
+# ---------- Publicidad ----------
+
+
+@router.get("/anuncios", response_model=list[AnuncioAdminOut])
+def espacios_publicitarios(_quien: MiembroPanel, db: Db, almacen: AlmacenDep) -> list[AnuncioAdminOut]:
+    """Los 3 espacios de la columna derecha del Inicio, ocupados o no."""
+    return contenido.espacios(db, almacen)
+
+
+@router.put("/anuncios/{posicion}", response_model=AnuncioAdminOut)
+def guardar_anuncio(
+    posicion: int, datos: AnuncioIn, _quien: GestionarPublicidad, db: Db, almacen: AlmacenDep
+) -> AnuncioAdminOut:
+    """Título, enlace y si se muestra. Se usan los 3 o solo los que estén activos."""
+    return contenido.guardar(db, almacen, posicion, datos)
+
+
+@router.put("/anuncios/{posicion}/imagen", response_model=AnuncioAdminOut)
+async def subir_imagen_anuncio(
+    posicion: int, _quien: GestionarPublicidad, db: Db, almacen: AlmacenDep, foto: Annotated[UploadFile, File()]
+) -> AnuncioAdminOut:
+    limite = settings.MAX_MB_FOTO * 1024 * 1024
+    datos = await foto.read(limite + 1)
+    if len(datos) > limite:
+        raise ErrorNegocio(status.HTTP_413_CONTENT_TOO_LARGE, f"La imagen pesa más de {settings.MAX_MB_FOTO} MB.")
+    return contenido.cambiar_imagen(db, almacen, posicion, datos)
+
+
+@router.delete("/anuncios/{posicion}/imagen", response_model=AnuncioAdminOut)
+def quitar_imagen_anuncio(posicion: int, _quien: GestionarPublicidad, db: Db, almacen: AlmacenDep) -> AnuncioAdminOut:
+    return contenido.cambiar_imagen(db, almacen, posicion, None)
+
+
+# ---------- Sugerencias ----------
+
+
+@router.get("/sugerencias", response_model=PaginaSugerencias)
+def listar_sugerencias(
+    _quien: VerSugerencias,
+    db: Db,
+    pagina: Annotated[int, Query(ge=1)] = 1,
+    por_pagina: Annotated[int, Query(ge=1, le=100)] = 10,
+) -> PaginaSugerencias:
+    return contenido.listar(db, pagina, por_pagina)
+
+
+@router.delete("/sugerencias/{sugerencia_id}", status_code=status.HTTP_204_NO_CONTENT)
+def borrar_sugerencia(sugerencia_id: int, _quien: VerSugerencias, db: Db) -> Response:
+    contenido.borrar(db, sugerencia_id)
     return Response(status_code=status.HTTP_204_NO_CONTENT)
