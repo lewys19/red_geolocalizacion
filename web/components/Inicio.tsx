@@ -276,11 +276,12 @@ function Publicidad() {
     <aside aria-label="Publicidad" className="space-y-3">
       {anuncios.map((a) => {
         const imagen = (
+          // Mismo cuadro que los espacios vacíos (h-48): la imagen se recorta para llenarlo, nunca lo estira.
           // eslint-disable-next-line @next/next/no-img-element
           <img
             src={a.imagen}
             alt={a.titulo ?? "Publicidad"}
-            className="w-full rounded-2xl border border-borde object-cover"
+            className="h-48 w-full rounded-2xl border border-borde object-cover"
           />
         );
         if (!a.enlace) return <div key={a.posicion}>{imagen}</div>;

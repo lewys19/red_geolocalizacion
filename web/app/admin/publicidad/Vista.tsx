@@ -74,14 +74,19 @@ function Espacio({ inicial, gestiona }: { inicial: AnuncioAdmin; gestiona: boole
         </span>
       </div>
       <div className="flex flex-1 flex-col gap-3 p-4">
+        {/* Vista previa con la proporción del cuadro del Inicio (260 × 192): se ve qué parte se recorta. */}
         {anuncio.imagen ? (
           // eslint-disable-next-line @next/next/no-img-element
-          <img src={anuncio.imagen} alt="" className="max-h-72 w-full rounded-lg border border-borde object-contain" />
+          <img
+            src={anuncio.imagen}
+            alt=""
+            className="aspect-[260/192] w-full rounded-lg border border-borde object-cover"
+          />
         ) : (
-          <div className="flex h-40 items-center justify-center rounded-lg border-2 border-dashed border-borde text-center text-sm text-texto-2">
+          <div className="flex aspect-[260/192] items-center justify-center rounded-lg border-2 border-dashed border-borde text-center text-sm text-texto-2">
             Sin imagen
             <br />
-            (recomendado: 520 × 380 px o más alta)
+            (recomendado: 520 × 384 px)
           </div>
         )}
         {gestiona && (
